@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💕 约会邀请</title>
+  <style>
+    /* ========== Reset & Base ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --pink-50: #fff0f6;
+      --pink-100: #ffe0ec;
+      --pink-200: #ffc2d9;
+      --pink-300: #ff94b8;
+      --pink-400: #ff6b9d;
+      --pink-500: #ff4081;
+      --pink-600: #e91e6c;
+      --bg: #fff5f8;
+      --card-bg: #ffffff;
+      --text-primary: #2d1b30;
+      --text-secondary: #6b4c6e;
+      --text-muted: #a88aab;
+      --radius-card: 28px;
+      --radius-btn: 50px;
+      --shadow-card: 0 4px 20px rgba(255, 64, 129, 0.08), 0 1px 4px rgba(0,0,0,0.04);
+      --shadow-btn: 0 4px 16px rgba(255, 64, 129, 0.3);
+      --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html { font-size: 16px; }
+
+    body {
+      font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ========== Floating Hearts Background ========== */
+    .floating-hearts {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .floating-hearts .heart {
+      position: absolute;
+      bottom: -60px;
+      font-size: 1.2rem;
+      opacity: 0;
+      animation: floatUp var(--dur, 8s) var(--delay, 0s) infinite ease-in;
+    }
+
+    @keyframes floatUp {
+      0% { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.5); }
+      10% { opacity: 0.7; }
+      90% { opacity: 0.3; }
+      100% { opacity: 0; transform: translateY(-110dvh) rotate(360deg) scale(1); }
+    }
+
+    /* ========== App Container ========== */
+    .app {
+      position: relative;
+      z-index: 1;
+      width: min(420px, 92vw);
+      min-height: 500px;
+    }
+
+    /* ========== Card (shared) ========== */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius-card);
+      padding: 2.5rem 2rem 2rem;
+      box-shadow: var(--shadow-card);
+      border: 1.5px solid var(--pink-100);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--pink-300), var(--pink-500), var(--pink-300));
+    }
+
+    /* ========== Step Pages ========== */
+    .step {
+      display: none;
+      animation: fadeSlideIn 0.6s ease both;
+    }
+
+    .step.active { display: block; }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(30px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ========== Avatar ========== */
+    .avatar-wrap {
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 1.2rem;
+      position: relative;
+    }
+
+    .avatar-wrap img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--pink-200);
+      box-shadow: 0 4px 16px rgba(255, 64, 129, 0.15);
+    }
+
+    .avatar-wrap::after {
+      content: '💕';
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      font-size: 1.4rem;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    /* ========== Decorative Flowers ========== */
+    .flowers {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.8rem;
+    }
+
+    .flowers span {
+      font-size: 1.3rem;
+      animation: sway 3s ease-in-out infinite;
+    }
+
+    .flowers span:nth-child(2) { animation-delay: 0.3s; }
+    .flowers span:nth-child(3) { animation-delay: 0.6s; }
+    .flowers span:nth-child(4) { animation-delay: 0.9s; }
+    .flowers span:nth-child(5) { animation-delay: 1.2s; }
+
+    @keyframes sway {
+      0%, 100% { transform: rotate(-5deg) scale(1); }
+      50% { transform: rotate(5deg) scale(1.1); }
+    }
+
+    /* ========== Typography ========== */
+    .title {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.4;
+      margin-bottom: 0.6rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+
+    /* ========== Buttons ========== */
+    .btn-group {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .btn {
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 0.85rem 2.2rem;
+      border-radius: var(--radius-btn);
+      transition: all var(--transition);
+      font-family: inherit;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+      color: #fff;
+      box-shadow: var(--shadow-btn);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 8px 28px rgba(255, 64, 129, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    .btn-secondary {
+      background: var(--pink-50);
+      color: var(--text-secondary);
+      border: 1.5px solid var(--pink-200);
+    }
+
+    .btn-secondary:hover {
+      background: var(--pink-100);
+      transform: translateY(-1px);
+    }
+
+    /* ========== "不要" Button Chase Effect ========== */
+    .btn-no {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .btn-no.escaping {
+      animation: escapeBtn 0.3s ease;
+    }
+
+    @keyframes escapeBtn {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(20px) rotate(5deg); }
+      50% { transform: translateX(-15px) rotate(-3deg); }
+      75% { transform: translateX(10px) rotate(2deg); }
+      100% { transform: translateX(0); }
+    }
+
+    /* ========== Step 2: Food Grid ========== */
+    .food-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 1.2rem;
+    }
+
+    .food-item {
+      background: var(--pink-50);
+      border: 2px solid transparent;
+      border-radius: 16px;
+      padding: 0.8rem 0.4rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .food-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 16px rgba(255, 64, 129, 0.12);
+    }
+
+    .food-item.selected {
+      border-color: var(--pink-400);
+      background: var(--pink-100);
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255, 64, 129, 0.2);
+    }
+
+    .food-item .emoji {
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .food-item .label {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .food-item.selected .label {
+      color: var(--pink-600);
+      font-weight: 600;
+    }
+
+    /* ========== Step 3: Date/Time Form ========== */
+    .form-group {
+      margin-bottom: 1rem;
+      text-align: left;
+    }
+
+    .form-label {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 0.4rem;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1.5px solid var(--pink-200);
+      border-radius: 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      color: var(--text-primary);
+      background: var(--pink-50);
+      transition: all var(--transition);
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--pink-400);
+      box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.1);
+      background: #fff;
+    }
+
+    /* ========== Step 4: Confirmation ========== */
+    .confirm-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin: 1.5rem 0;
+    }
+
+    .detail-card {
+      background: var(--pink-50);
+      border-radius: 16px;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .detail-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .detail-card .detail-icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .detail-card .detail-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-bottom: 0.2rem;
+    }
+
+    .detail-card .detail-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    /* Hearts bar */
+    .hearts-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.4rem;
+      margin-top: 1rem;
+    }
+
+    .hearts-bar span {
+      font-size: 1.1rem;
+      animation: heartBeat 1s ease-in-out infinite;
+    }
+
+    .hearts-bar span:nth-child(2) { animation-delay: 0.15s; }
+    .hearts-bar span:nth-child(3) { animation-delay: 0.3s; }
+    .hearts-bar span:nth-child(4) { animation-delay: 0.45s; }
+    .hearts-bar span:nth-child(5) { animation-delay: 0.6s; }
+
+    @keyframes heartBeat {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.3); opacity: 1; }
+    }
+
+    /* ========== Rejection Page ========== */
+    .rejection-face {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: sadShake 2s ease-in-out infinite;
+    }
+
+    @keyframes sadShake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-3deg); }
+      40% { transform: rotate(3deg); }
+      60% { transform: rotate(-2deg); }
+      80% { transform: rotate(2deg); }
+    }
+
+    /* ========== Confetti ========== */
+    .confetti-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .confetti {
+      position: absolute;
+      top: -20px;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      animation: confettiFall var(--fall-dur, 3s) var(--fall-delay, 0s) linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+      100% { opacity: 0; transform: translateY(110dvh) rotate(720deg); }
+    }
+
+    /* ========== Progress Dots ========== */
+    .progress-dots {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pink-200);
+      transition: all var(--transition);
+    }
+
+    .dot.active {
+      background: var(--pink-500);
+      width: 24px;
+      border-radius: 4px;
+    }
+
+    /* ========== Responsive ========== */
+    @media (width < 400px) {
+      .card { padding: 2rem 1.2rem 1.5rem; }
+      .title { font-size: 1.4rem; }
+      .food-grid { gap: 0.5rem; }
+      .food-item .emoji { font-size: 1.6rem; }
+      .btn { padding: 0.75rem 1.6rem; font-size: 0.9rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Hearts Background -->
+  <div class="floating-hearts" id="floatingHearts"></div>
+
+  <!-- Main App -->
+  <div class="app">
+
+    <!-- Step 1: Invitation -->
+    <div class="step active" id="step1">
+      <div class="card">
+        <div class="flowers">
+          <span>🌸</span><span>✨</span><span>🌸</span><span>✨</span><span>🌸</span>
+        </div>
+        <div class="avatar-wrap">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
+        </div>
+        <h1 class="title">可以和我一起<br>约会吗？🥺</h1>
+        <p class="subtitle">不用紧张，只是想和你多待一会儿而已～</p>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="goToStep(2)">好呀 💕</button>
+          <button class="btn btn-secondary btn-no" id="btnNo" onclick="handleReject()">不要 😤</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 2: Food Selection -->
+    <div class="step" id="step2">
+      <div class="card">
+        <div class="flowers">
+          <span>🍽️</span><span>✨</span><span>😋</span><span>✨</span><span>🍽️</span>
+        </div>
+        <h1 class="title">我们吃点什么？🤤</h1>
+        <p class="subtitle">选一个你最想吃的，剩下的我来安排～</p>
+        <div class="food-grid" id="foodGrid">
+          <div class="food-item" onclick="selectFood(this, '奶茶')">
+            <span class="emoji">🧋</span>
+            <span class="label">奶茶</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '烤肉')">
+            <span class="emoji">🥩</span>
+            <span class="label">烤肉</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '火锅')">
+            <span class="emoji">🍲</span>
+            <span class="label">火锅</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '烧烤')">
+            <span class="emoji">🍖</span>
+            <span class="label">烧烤</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '日料')">
+            <span class="emoji">🍣</span>
+            <span class="label">日料</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '西餐')">
+            <span class="emoji">🥗</span>
+            <span class="label">西餐</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '甜品')">
+            <span class="emoji">🍰</span>
+            <span class="label">甜品</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '小龙虾')">
+            <span class="emoji">🦞</span>
+            <span class="label">小龙虾</span>
+          </div>
+          <div class="food-item" onclick="selectFood(this, '烤串')">
+            <span class="emoji">🍢</span>
+            <span class="label">烤串</span>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" id="btnFood" onclick="goToStep(3)" style="opacity: 0.5; pointer-events: none;">就这个！✨</button>
+        </div>
+        <div class="progress-dots">
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 3: Date & Time -->
+    <div class="step" id="step3">
+      <div class="card">
+        <div class="flowers">
+          <span>📅</span><span>✨</span><span>⏰</span><span>✨</span><span>📅</span>
+        </div>
+        <div class="avatar-wrap" style="width:70px;height:70px;">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
+        </div>
+        <h1 class="title">所以...你什么<br>时候有空？🥰</h1>
+        <p class="subtitle">选一个你方便的时间，我一定到！</p>
+        <div class="form-group">
+          <label class="form-label"><span>📅</span> 日期</label>
+          <input type="date" class="form-input" id="dateInput">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span>⏰</span> 时间</label>
+          <input type="time" class="form-input" id="timeInput" value="18:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span>📍</span> 你想在哪见面？</label>
+          <input type="text" class="form-input" id="locationInput" placeholder="地铁站、商场、还是你楼下？">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="confirmDate()">确定！去约会 💗</button>
+        </div>
+        <div class="progress-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot active"></span>
+          <span class="dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4: Confirmation -->
+    <div class="step" id="step4">
+      <div class="card">
+        <div class="flowers">
+          <span>🎉</span><span>💕</span><span>🎉</span><span>💕</span><span>🎉</span>
+        </div>
+        <div class="avatar-wrap">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
+        </div>
+        <h1 class="title">真开心你没有拒绝～<br>我会来接你！😆</h1>
+        <p class="subtitle">这是我们的约会计划，期待那天的到来 ♡</p>
+        <div class="confirm-details">
+          <div class="detail-card">
+            <div class="detail-icon">📅</div>
+            <div class="detail-label">日期</div>
+            <div class="detail-value" id="confirmDate">-</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-icon">⏰</div>
+            <div class="detail-label">时间</div>
+            <div class="detail-value" id="confirmTime">-</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-icon">🍽️</div>
+            <div class="detail-label">吃什么</div>
+            <div class="detail-value" id="confirmFood">-</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-icon">📍</div>
+            <div class="detail-label">见面地点</div>
+            <div class="detail-value" id="confirmLocation">-</div>
+          </div>
+        </div>
+        <div class="hearts-bar">
+          <span>💗</span><span>💗</span><span>💗</span><span>💗</span><span>💗</span>
+        </div>
+        <div class="progress-dots">
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot"></span>
+          <span class="dot active"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rejection Page (hidden) -->
+    <div class="step" id="stepReject">
+      <div class="card">
+        <div class="rejection-face">🥺</div>
+        <h1 class="title">呜呜呜...<br>你真的不愿意吗？</h1>
+        <p class="subtitle">那我再问一次好不好...拜托啦！</p>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="goToStep(2)" style="font-size:1.1rem;padding:1rem 2.5rem;">好吧好吧，答应你 💕</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Confetti Container -->
+  <div class="confetti-container" id="confettiContainer"></div>
+
+  <script>
+    // ===== State =====
+    let selectedFood = '';
+    let rejectCount = 0;
+
+    // ===== Init =====
+    (function init() {
+      createFloatingHearts();
+      setDefaultDate();
+    })();
+
+    function setDefaultDate() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const y = tomorrow.getFullYear();
+      const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+      const d = String(tomorrow.getDate()).padStart(2, '0');
+      document.getElementById('dateInput').value = `${y}-${m}-${d}`;
+    }
+
+    // ===== Navigation =====
+    function goToStep(n) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      const target = document.getElementById(`step${n}`);
+      if (target) {
+        // Re-trigger animation
+        target.style.animation = 'none';
+        target.offsetHeight; // reflow
+        target.style.animation = '';
+        target.classList.add('active');
+      }
+      if (n === 4) {
+        setTimeout(launchConfetti, 300);
+      }
+    }
+
+    // ===== Reject Handler =====
+    function handleReject() {
+      rejectCount++;
+      const btn = document.getElementById('btnNo');
+
+      if (rejectCount < 3) {
+        // Make the button "escape"
+        btn.classList.add('escaping');
+        setTimeout(() => btn.classList.remove('escaping'), 300);
+
+        // Change text progressively
+        const texts = ['再想想？😢', '真的吗？🥺'];
+        btn.textContent = texts[rejectCount - 1] || '🥺';
+      } else {
+        // After 3 rejections, go to rejection page
+        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+        const reject = document.getElementById('stepReject');
+        reject.style.animation = 'none';
+        reject.offsetHeight;
+        reject.style.animation = '';
+        reject.classList.add('active');
+      }
+    }
+
+    // ===== Food Selection =====
+    function selectFood(el, name) {
+      document.querySelectorAll('.food-item').forEach(item => item.classList.remove('selected'));
+      el.classList.add('selected');
+      selectedFood = name;
+
+      const btn = document.getElementById('btnFood');
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+
+    // ===== Date Confirmation =====
+    function confirmDate() {
+      const dateVal = document.getElementById('dateInput').value;
+      const timeVal = document.getElementById('timeInput').value;
+      const locVal = document.getElementById('locationInput').value || '你指定的地方';
+
+      // Format date
+      let dateDisplay = dateVal;
+      if (dateVal) {
+        const d = new Date(dateVal + 'T00:00:00');
+        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+        dateDisplay = `${d.getMonth() + 1}月${d.getDate()}日 ${weekdays[d.getDay()]}`;
+      }
+
+      document.getElementById('confirmDate').textContent = dateDisplay;
+      document.getElementById('confirmTime').textContent = timeVal || '18:00';
+      document.getElementById('confirmFood').textContent = selectedFood || '你选的';
+      document.getElementById('confirmLocation').textContent = locVal;
+
+      goToStep(4);
+    }
+
+    // ===== Floating Hearts =====
+    function createFloatingHearts() {
+      const container = document.getElementById('floatingHearts');
+      const hearts = ['💕', '💗', '💖', '♥️', '🩷', '✨', '🌸'];
+
+      for (let i = 0; i < 18; i++) {
+        const heart = document.createElement('span');
+        heart.classList.add('heart');
+        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+        heart.style.left = Math.random() * 100 + '%';
+        heart.style.setProperty('--dur', (6 + Math.random() * 8) + 's');
+        heart.style.setProperty('--delay', (Math.random() * 10) + 's');
+        heart.style.fontSize = (0.8 + Math.random() * 1) + 'rem';
+        container.appendChild(heart);
+      }
+    }
+
+    // ===== Confetti =====
+    function launchConfetti() {
+      const container = document.getElementById('confettiContainer');
+      const colors = ['#ff4081', '#ff94b8', '#ffc2d9', '#ff6b9d', '#e91e6c', '#ffeb3b', '#4fc3f7'];
+
+      for (let i = 0; i < 60; i++) {
+        const confetti = document.createElement('div');
+        confetti.classList.add('confetti');
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.width = (6 + Math.random() * 8) + 'px';
+        confetti.style.height = (6 + Math.random() * 8) + 'px';
+        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+        confetti.style.setProperty('--fall-dur', (2 + Math.random() * 3) + 's');
+        confetti.style.setProperty('--fall-delay', (Math.random() * 1) + 's');
+        container.appendChild(confetti);
+      }
+
+      // Clean up after animation
+      setTimeout(() => { container.innerHTML = ''; }, 6000);
+    }
+  </script>
+</body>
+</html>
