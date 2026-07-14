@@ -443,6 +443,54 @@
       border-radius: 4px;
     }
 
+    /* ========== Step 0: Setup (Sender) ========== */
+    .link-output {
+      background: var(--pink-50);
+      border: 1.5px dashed var(--pink-300);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      word-break: break-all;
+      line-height: 1.5;
+      margin-top: 1rem;
+      text-align: left;
+      display: none;
+    }
+
+    .link-output.visible { display: block; }
+
+    .copy-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--pink-500);
+      color: #fff;
+      padding: 0.6rem 1.5rem;
+      border-radius: var(--radius-btn);
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s ease;
+      z-index: 20;
+    }
+
+    .copy-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ========== Step 4: Mail Button ========== */
+    .btn-mail {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      text-decoration: none;
+      margin-top: 1rem;
+    }
+
     /* ========== Responsive ========== */
     @media (width < 400px) {
       .card { padding: 2rem 1.2rem 1.5rem; }
@@ -458,11 +506,42 @@
   <!-- Floating Hearts Background -->
   <div class="floating-hearts" id="floatingHearts"></div>
 
+  <!-- Copy Toast -->
+  <div class="copy-toast" id="copyToast">链接已复制 ✅</div>
+
   <!-- Main App -->
   <div class="app">
 
+    <!-- Step 0: Sender Setup -->
+    <div class="step" id="step0">
+      <div class="card">
+        <div class="flowers">
+          <span>💌</span><span>✨</span><span>💘</span><span>✨</span><span>💌</span>
+        </div>
+        <h1 class="title">创建你的<br>约会邀请函 💌</h1>
+        <p class="subtitle">填写你的信息，生成专属链接发给 TA～</p>
+        <div class="form-group">
+          <label class="form-label"><span>😊</span> 你的昵称</label>
+          <input type="text" class="form-input" id="senderName" placeholder="对方怎么称呼你？">
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span>📧</span> 你的邮箱</label>
+          <input type="email" class="form-input" id="senderEmail" placeholder="接收对方回复的邮箱">
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="generateLink()">生成邀请链接 ✨</button>
+        </div>
+        <div class="link-output" id="linkOutput">
+          <span id="linkText"></span>
+        </div>
+        <div class="btn-group" id="copyBtnGroup" style="display:none;">
+          <button class="btn btn-primary" onclick="copyLink()">复制链接 📋</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Step 1: Invitation -->
-    <div class="step active" id="step1">
+    <div class="step" id="step1">
       <div class="card">
         <div class="flowers">
           <span>🌸</span><span>✨</span><span>🌸</span><span>✨</span><span>🌸</span>
@@ -471,7 +550,7 @@
           <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
         </div>
         <h1 class="title">可以和我一起<br>约会吗？🥺</h1>
-        <p class="subtitle">不用紧张，只是想和你多待一会儿而已～</p>
+        <p class="subtitle" id="inviteSubtitle">不用紧张，只是想和你多待一会儿而已～</p>
         <div class="btn-group">
           <button class="btn btn-primary" onclick="goToStep(2)">好呀 💕</button>
           <button class="btn btn-secondary btn-no" id="btnNo" onclick="handleReject()">不要 😤</button>
@@ -605,6 +684,9 @@
             <div class="detail-value" id="confirmLocation">-</div>
           </div>
         </div>
+        <div class="btn-group">
+          <a class="btn btn-primary btn-mail" id="mailBtn" href="#" onclick="return false;">告诉 TA 你的回复 📧</a>
+        </div>
         <div class="hearts-bar">
           <span>💗</span><span>💗</span><span>💗</span><span>💗</span><span>💗</span>
         </div>
@@ -638,12 +720,63 @@
     // ===== State =====
     let selectedFood = '';
     let rejectCount = 0;
+    let senderName = '';
+    let senderEmail = '';
 
     // ===== Init =====
     (function init() {
       createFloatingHearts();
       setDefaultDate();
+      checkMode();
     })();
+
+    // ===== Mode Detection =====
+    function checkMode() {
+      const params = new URLSearchParams(window.location.search);
+      const name = params.get('from');
+      const email = params.get('email');
+
+      if (name && email) {
+        // Invited mode: show invitation page
+        senderName = decodeURIComponent(name);
+        senderEmail = decodeURIComponent(email);
+        document.getElementById('inviteSubtitle').textContent =
+          `来自 ${senderName} 的邀请～不用紧张，只是想和你多待一会儿而已～`;
+        document.getElementById('step1').classList.add('active');
+      } else {
+        // Sender mode: show setup page
+        document.getElementById('step0').classList.add('active');
+      }
+    }
+
+    // ===== Generate Link =====
+    function generateLink() {
+      const name = document.getElementById('senderName').value.trim();
+      const email = document.getElementById('senderEmail').value.trim();
+
+      if (!name) { document.getElementById('senderName').focus(); return; }
+      if (!email || !email.includes('@')) { document.getElementById('senderEmail').focus(); return; }
+
+      senderName = name;
+      senderEmail = email;
+
+      const base = window.location.origin + window.location.pathname;
+      const link = `${base}?from=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+
+      document.getElementById('linkText').textContent = link;
+      document.getElementById('linkOutput').classList.add('visible');
+      document.getElementById('copyBtnGroup').style.display = 'flex';
+    }
+
+    // ===== Copy Link =====
+    function copyLink() {
+      const text = document.getElementById('linkText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const toast = document.getElementById('copyToast');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2000);
+      });
+    }
 
     function setDefaultDate() {
       const tomorrow = new Date();
@@ -723,6 +856,24 @@
       document.getElementById('confirmTime').textContent = timeVal || '18:00';
       document.getElementById('confirmFood').textContent = selectedFood || '你选的';
       document.getElementById('confirmLocation').textContent = locVal;
+
+      // Build mailto link
+      if (senderEmail) {
+        const subject = encodeURIComponent(`💕 约会确认 - 来自你的约会邀请`);
+        const body = encodeURIComponent(
+          `Hi ${senderName}!\n\n` +
+          `你的约会邀请被接受啦！🎉\n\n` +
+          `以下是约会计划：\n` +
+          `📅 日期：${dateDisplay}\n` +
+          `⏰ 时间：${timeVal || '18:00'}\n` +
+          `🍽️ 吃什么：${selectedFood || '你选的'}\n` +
+          `📍 见面地点：${locVal}\n\n` +
+          `期待我们的约会！💕`
+        );
+        document.getElementById('mailBtn').href = `mailto:${senderEmail}?subject=${subject}&body=${body}`;
+      } else {
+        document.getElementById('mailBtn').style.display = 'none';
+      }
 
       goToStep(4);
     }
