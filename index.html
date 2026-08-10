@@ -565,7 +565,7 @@
           <span>🍽️</span><span>✨</span><span>😋</span><span>✨</span><span>🍽️</span>
         </div>
         <h1 class="title">我们吃点什么？🤤</h1>
-        <p class="subtitle">选一个你最想吃的，剩下的我来安排～</p>
+        <p class="subtitle">选你想吃的，可以多选哦～剩下的我来安排！</p>
         <div class="food-grid" id="foodGrid">
           <div class="food-item" onclick="selectFood(this, '奶茶')">
             <span class="emoji">🧋</span>
@@ -718,7 +718,7 @@
 
   <script>
     // ===== State =====
-    let selectedFood = '';
+    let selectedFood = [];
     let rejectCount = 0;
     let senderName = '';
     let senderEmail = '';
@@ -827,15 +827,24 @@
       }
     }
 
-    // ===== Food Selection =====
+    // ===== Food Selection (Multi-select) =====
     function selectFood(el, name) {
-      document.querySelectorAll('.food-item').forEach(item => item.classList.remove('selected'));
-      el.classList.add('selected');
-      selectedFood = name;
+      if (el.classList.contains('selected')) {
+        el.classList.remove('selected');
+        selectedFood = selectedFood.filter(f => f !== name);
+      } else {
+        el.classList.add('selected');
+        selectedFood.push(name);
+      }
 
       const btn = document.getElementById('btnFood');
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
+      if (selectedFood.length > 0) {
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      } else {
+        btn.style.opacity = '0.5';
+        btn.style.pointerEvents = 'none';
+      }
     }
 
     // ===== Date Confirmation =====
@@ -854,7 +863,7 @@
 
       document.getElementById('confirmDate').textContent = dateDisplay;
       document.getElementById('confirmTime').textContent = timeVal || '18:00';
-      document.getElementById('confirmFood').textContent = selectedFood || '你选的';
+      document.getElementById('confirmFood').textContent = selectedFood.length > 0 ? selectedFood.join('、') : '你选的';
       document.getElementById('confirmLocation').textContent = locVal;
 
       // Build mailto link
@@ -866,7 +875,7 @@
           `以下是约会计划：\n` +
           `📅 日期：${dateDisplay}\n` +
           `⏰ 时间：${timeVal || '18:00'}\n` +
-          `🍽️ 吃什么：${selectedFood || '你选的'}\n` +
+          `🍽️ 吃什么：${selectedFood.length > 0 ? selectedFood.join('、') : '你选的'}\n` +
           `📍 见面地点：${locVal}\n\n` +
           `期待我们的约会！💕`
         );
