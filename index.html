@@ -1,930 +1,1713 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>💕 约会邀请</title>
-  <style>
-    /* ========== Reset & Base ========== */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --pink-50: #fff0f6;
-      --pink-100: #ffe0ec;
-      --pink-200: #ffc2d9;
-      --pink-300: #ff94b8;
-      --pink-400: #ff6b9d;
-      --pink-500: #ff4081;
-      --pink-600: #e91e6c;
-      --bg: #fff5f8;
-      --card-bg: #ffffff;
-      --text-primary: #2d1b30;
-      --text-secondary: #6b4c6e;
-      --text-muted: #a88aab;
-      --radius-card: 28px;
-      --radius-btn: 50px;
-      --shadow-card: 0 4px 20px rgba(255, 64, 129, 0.08), 0 1px 4px rgba(0,0,0,0.04);
-      --shadow-btn: 0 4px 16px rgba(255, 64, 129, 0.3);
-      --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    html { font-size: 16px; }
-
-    body {
-      font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
-      background: var(--bg);
-      color: var(--text-primary);
-      min-height: 100dvh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      overflow: hidden;
-      position: relative;
-    }
-
-    /* ========== Floating Hearts Background ========== */
-    .floating-hearts {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-
-    .floating-hearts .heart {
-      position: absolute;
-      bottom: -60px;
-      font-size: 1.2rem;
-      opacity: 0;
-      animation: floatUp var(--dur, 8s) var(--delay, 0s) infinite ease-in;
-    }
-
-    @keyframes floatUp {
-      0% { opacity: 0; transform: translateY(0) rotate(0deg) scale(0.5); }
-      10% { opacity: 0.7; }
-      90% { opacity: 0.3; }
-      100% { opacity: 0; transform: translateY(-110dvh) rotate(360deg) scale(1); }
-    }
-
-    /* ========== App Container ========== */
-    .app {
-      position: relative;
-      z-index: 1;
-      width: min(420px, 92vw);
-      min-height: 500px;
-    }
-
-    /* ========== Card (shared) ========== */
-    .card {
-      background: var(--card-bg);
-      border-radius: var(--radius-card);
-      padding: 2.5rem 2rem 2rem;
-      box-shadow: var(--shadow-card);
-      border: 1.5px solid var(--pink-100);
-      text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, var(--pink-300), var(--pink-500), var(--pink-300));
-    }
-
-    /* ========== Step Pages ========== */
-    .step {
-      display: none;
-      animation: fadeSlideIn 0.6s ease both;
-    }
-
-    .step.active { display: block; }
-
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(30px) scale(0.96); }
-      to { opacity: 1; transform: translateY(0) scale(1); }
-    }
-
-    /* ========== Avatar ========== */
-    .avatar-wrap {
-      width: 100px;
-      height: 100px;
-      margin: 0 auto 1.2rem;
-      position: relative;
-    }
-
-    .avatar-wrap img {
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      object-fit: cover;
-      border: 3px solid var(--pink-200);
-      box-shadow: 0 4px 16px rgba(255, 64, 129, 0.15);
-    }
-
-    .avatar-wrap::after {
-      content: '💕';
-      position: absolute;
-      top: -8px;
-      right: -8px;
-      font-size: 1.4rem;
-      animation: pulse 1.5s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.2); }
-    }
-
-    /* ========== Decorative Flowers ========== */
-    .flowers {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 0.8rem;
-    }
-
-    .flowers span {
-      font-size: 1.3rem;
-      animation: sway 3s ease-in-out infinite;
-    }
-
-    .flowers span:nth-child(2) { animation-delay: 0.3s; }
-    .flowers span:nth-child(3) { animation-delay: 0.6s; }
-    .flowers span:nth-child(4) { animation-delay: 0.9s; }
-    .flowers span:nth-child(5) { animation-delay: 1.2s; }
-
-    @keyframes sway {
-      0%, 100% { transform: rotate(-5deg) scale(1); }
-      50% { transform: rotate(5deg) scale(1.1); }
-    }
-
-    /* ========== Typography ========== */
-    .title {
-      font-size: 1.65rem;
-      font-weight: 700;
-      color: var(--text-primary);
-      line-height: 1.4;
-      margin-bottom: 0.6rem;
-    }
-
-    .subtitle {
-      font-size: 0.9rem;
-      color: var(--text-muted);
-      margin-bottom: 2rem;
-      line-height: 1.5;
-    }
-
-    /* ========== Buttons ========== */
-    .btn-group {
-      display: flex;
-      gap: 1rem;
-      justify-content: center;
-      margin-top: 1.5rem;
-    }
-
-    .btn {
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-      font-weight: 600;
-      padding: 0.85rem 2.2rem;
-      border-radius: var(--radius-btn);
-      transition: all var(--transition);
-      font-family: inherit;
-      letter-spacing: 0.02em;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
-      color: #fff;
-      box-shadow: var(--shadow-btn);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-2px) scale(1.03);
-      box-shadow: 0 8px 28px rgba(255, 64, 129, 0.4);
-    }
-
-    .btn-primary:active {
-      transform: translateY(0) scale(0.98);
-    }
-
-    .btn-secondary {
-      background: var(--pink-50);
-      color: var(--text-secondary);
-      border: 1.5px solid var(--pink-200);
-    }
-
-    .btn-secondary:hover {
-      background: var(--pink-100);
-      transform: translateY(-1px);
-    }
-
-    /* ========== "不要" Button Chase Effect ========== */
-    .btn-no {
-      position: relative;
-      transition: all 0.2s ease;
-    }
-
-    .btn-no.escaping {
-      animation: escapeBtn 0.3s ease;
-    }
-
-    @keyframes escapeBtn {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(20px) rotate(5deg); }
-      50% { transform: translateX(-15px) rotate(-3deg); }
-      75% { transform: translateX(10px) rotate(2deg); }
-      100% { transform: translateX(0); }
-    }
-
-    /* ========== Step 2: Food Grid ========== */
-    .food-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-      margin-top: 1.2rem;
-    }
-
-    .food-item {
-      background: var(--pink-50);
-      border: 2px solid transparent;
-      border-radius: 16px;
-      padding: 0.8rem 0.4rem;
-      cursor: pointer;
-      transition: all var(--transition);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 0.35rem;
-    }
-
-    .food-item:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(255, 64, 129, 0.12);
-    }
-
-    .food-item.selected {
-      border-color: var(--pink-400);
-      background: var(--pink-100);
-      transform: scale(1.05);
-      box-shadow: 0 4px 12px rgba(255, 64, 129, 0.2);
-    }
-
-    .food-item .emoji {
-      font-size: 2rem;
-      line-height: 1;
-    }
-
-    .food-item .label {
-      font-size: 0.78rem;
-      color: var(--text-secondary);
-      font-weight: 500;
-    }
-
-    .food-item.selected .label {
-      color: var(--pink-600);
-      font-weight: 600;
-    }
-
-    /* ========== Step 3: Date/Time Form ========== */
-    .form-group {
-      margin-bottom: 1rem;
-      text-align: left;
-    }
-
-    .form-label {
-      display: flex;
-      align-items: center;
-      gap: 0.4rem;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      margin-bottom: 0.4rem;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1.5px solid var(--pink-200);
-      border-radius: 14px;
-      font-size: 0.95rem;
-      font-family: inherit;
-      color: var(--text-primary);
-      background: var(--pink-50);
-      transition: all var(--transition);
-      outline: none;
-    }
-
-    .form-input:focus {
-      border-color: var(--pink-400);
-      box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.1);
-      background: #fff;
-    }
-
-    /* ========== Step 4: Confirmation ========== */
-    .confirm-details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-      margin: 1.5rem 0;
-    }
-
-    .detail-card {
-      background: var(--pink-50);
-      border-radius: 16px;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .detail-card.full-width {
-      grid-column: 1 / -1;
-    }
-
-    .detail-card .detail-icon {
-      font-size: 1.5rem;
-      margin-bottom: 0.3rem;
-    }
-
-    .detail-card .detail-label {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      margin-bottom: 0.2rem;
-    }
-
-    .detail-card .detail-value {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    /* Hearts bar */
-    .hearts-bar {
-      display: flex;
-      justify-content: center;
-      gap: 0.4rem;
-      margin-top: 1rem;
-    }
-
-    .hearts-bar span {
-      font-size: 1.1rem;
-      animation: heartBeat 1s ease-in-out infinite;
-    }
-
-    .hearts-bar span:nth-child(2) { animation-delay: 0.15s; }
-    .hearts-bar span:nth-child(3) { animation-delay: 0.3s; }
-    .hearts-bar span:nth-child(4) { animation-delay: 0.45s; }
-    .hearts-bar span:nth-child(5) { animation-delay: 0.6s; }
-
-    @keyframes heartBeat {
-      0%, 100% { transform: scale(1); opacity: 0.7; }
-      50% { transform: scale(1.3); opacity: 1; }
-    }
-
-    /* ========== Rejection Page ========== */
-    .rejection-face {
-      font-size: 4rem;
-      margin-bottom: 1rem;
-      animation: sadShake 2s ease-in-out infinite;
-    }
-
-    @keyframes sadShake {
-      0%, 100% { transform: rotate(0deg); }
-      20% { transform: rotate(-3deg); }
-      40% { transform: rotate(3deg); }
-      60% { transform: rotate(-2deg); }
-      80% { transform: rotate(2deg); }
-    }
-
-    /* ========== Confetti ========== */
-    .confetti-container {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      z-index: 10;
-    }
-
-    .confetti {
-      position: absolute;
-      top: -20px;
-      width: 10px;
-      height: 10px;
-      border-radius: 2px;
-      animation: confettiFall var(--fall-dur, 3s) var(--fall-delay, 0s) linear forwards;
-    }
-
-    @keyframes confettiFall {
-      0% { opacity: 1; transform: translateY(0) rotate(0deg); }
-      100% { opacity: 0; transform: translateY(110dvh) rotate(720deg); }
-    }
-
-    /* ========== Progress Dots ========== */
-    .progress-dots {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      margin-top: 1.5rem;
-    }
-
-    .dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--pink-200);
-      transition: all var(--transition);
-    }
-
-    .dot.active {
-      background: var(--pink-500);
-      width: 24px;
-      border-radius: 4px;
-    }
-
-    /* ========== Step 0: Setup (Sender) ========== */
-    .link-output {
-      background: var(--pink-50);
-      border: 1.5px dashed var(--pink-300);
-      border-radius: 14px;
-      padding: 0.85rem 1rem;
-      font-size: 0.82rem;
-      color: var(--text-secondary);
-      word-break: break-all;
-      line-height: 1.5;
-      margin-top: 1rem;
-      text-align: left;
-      display: none;
-    }
-
-    .link-output.visible { display: block; }
-
-    .copy-toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      background: var(--pink-500);
-      color: #fff;
-      padding: 0.6rem 1.5rem;
-      border-radius: var(--radius-btn);
-      font-size: 0.9rem;
-      font-weight: 600;
-      opacity: 0;
-      pointer-events: none;
-      transition: all 0.3s ease;
-      z-index: 20;
-    }
-
-    .copy-toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    /* ========== Step 4: Mail Button ========== */
-    .btn-mail {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      text-decoration: none;
-      margin-top: 1rem;
-    }
-
-    /* ========== Responsive ========== */
-    @media (width < 400px) {
-      .card { padding: 2rem 1.2rem 1.5rem; }
-      .title { font-size: 1.4rem; }
-      .food-grid { gap: 0.5rem; }
-      .food-item .emoji { font-size: 1.6rem; }
-      .btn { padding: 0.75rem 1.6rem; font-size: 0.9rem; }
-    }
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>💕 约会邀请</title>
+    <style>
+        /* ========== Reset & Base ========== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --pink-50: #fff0f6;
+            --pink-100: #ffe0ec;
+            --pink-200: #ffc2d9;
+            --pink-300: #ff94b8;
+            --pink-400: #ff6b9d;
+            --pink-500: #ff4081;
+            --pink-600: #e91e6c;
+            --bg: #fff5f8;
+            --card-bg: #ffffff;
+            --text-primary: #2d1b30;
+            --text-secondary: #6b4c6e;
+            --text-muted: #a88aab;
+            --radius-card: 28px;
+            --radius-btn: 50px;
+            --shadow-card: 0 4px 20px rgba(255, 64, 129, 0.08), 0 1px 4px rgba(0, 0, 0, 0.04);
+            --shadow-btn: 0 4px 16px rgba(255, 64, 129, 0.3);
+            --transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        html {
+            font-size: 16px;
+        }
+
+        body {
+            font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text-primary);
+            min-height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ========== Floating Hearts Background ========== */
+        .floating-hearts {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .floating-hearts .heart {
+            position: absolute;
+            bottom: -60px;
+            font-size: 1.2rem;
+            opacity: 0;
+            animation: floatUp var(--dur, 8s) var(--delay, 0s) infinite ease-in;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 0;
+                transform: translateY(0) rotate(0deg) scale(0.5);
+            }
+            10% {
+                opacity: 0.7;
+            }
+            90% {
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-110dvh) rotate(360deg) scale(1);
+            }
+        }
+
+        /* ========== App Container ========== */
+        .app {
+            position: relative;
+            z-index: 1;
+            width: min(420px, 92vw);
+            min-height: 500px;
+        }
+
+        /* ========== Card (shared) ========== */
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-card);
+            padding: 2.5rem 2rem 2rem;
+            box-shadow: var(--shadow-card);
+            border: 1.5px solid var(--pink-100);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, var(--pink-300), var(--pink-500), var(--pink-300));
+        }
+
+        /* ========== Step Pages ========== */
+        .step {
+            display: none;
+            animation: fadeSlideIn 0.6s ease both;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px) scale(0.96);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* ========== Avatar ========== */
+        .avatar-wrap {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 1.2rem;
+            position: relative;
+        }
+
+        .avatar-wrap img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--pink-200);
+            box-shadow: 0 4px 16px rgba(255, 64, 129, 0.15);
+        }
+
+        .avatar-wrap::after {
+            content: '💕';
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            font-size: 1.4rem;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.2);
+            }
+        }
+
+        /* ========== Decorative Flowers ========== */
+        .flowers {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .flowers span {
+            font-size: 1.3rem;
+            animation: sway 3s ease-in-out infinite;
+        }
+
+        .flowers span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+        .flowers span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+        .flowers span:nth-child(4) {
+            animation-delay: 0.9s;
+        }
+        .flowers span:nth-child(5) {
+            animation-delay: 1.2s;
+        }
+
+        @keyframes sway {
+            0%,
+            100% {
+                transform: rotate(-5deg) scale(1);
+            }
+            50% {
+                transform: rotate(5deg) scale(1.1);
+            }
+        }
+
+        /* ========== Typography ========== */
+        .title {
+            font-size: 1.65rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            line-height: 1.4;
+            margin-bottom: 0.6rem;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        /* ========== Buttons ========== */
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            padding: 0.85rem 2.2rem;
+            border-radius: var(--radius-btn);
+            transition: all var(--transition);
+            font-family: inherit;
+            letter-spacing: 0.02em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--pink-400), var(--pink-500));
+            color: #fff;
+            box-shadow: var(--shadow-btn);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 28px rgba(255, 64, 129, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-secondary {
+            background: var(--pink-50);
+            color: var(--text-secondary);
+            border: 1.5px solid var(--pink-200);
+        }
+
+        .btn-secondary:hover {
+            background: var(--pink-100);
+            transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        /* ========== "不要" Button Chase Effect ========== */
+        .btn-no {
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .btn-no.escaping {
+            animation: escapeBtn 0.3s ease;
+        }
+
+        @keyframes escapeBtn {
+            0% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(20px) rotate(5deg);
+            }
+            50% {
+                transform: translateX(-15px) rotate(-3deg);
+            }
+            75% {
+                transform: translateX(10px) rotate(2deg);
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        /* ========== Food Grid ========== */
+        .food-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+            margin-top: 1.2rem;
+        }
+
+        .food-item {
+            background: var(--pink-50);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 0.8rem 0.4rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .food-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(255, 64, 129, 0.12);
+        }
+
+        .food-item.selected {
+            border-color: var(--pink-400);
+            background: var(--pink-100);
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(255, 64, 129, 0.2);
+        }
+
+        .food-item .emoji {
+            font-size: 2rem;
+            line-height: 1;
+        }
+
+        .food-item .label {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .food-item.selected .label {
+            color: var(--pink-600);
+            font-weight: 600;
+        }
+
+        /* ========== Food "我想想" 输入框 ========== */
+        .food-custom-wrap {
+            margin-top: 0.8rem;
+            display: none;
+            animation: fadeSlideIn 0.3s ease both;
+        }
+
+        .food-custom-wrap.visible {
+            display: block;
+        }
+
+        .food-custom-wrap .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--pink-200);
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: var(--pink-50);
+            transition: all var(--transition);
+            outline: none;
+            color: var(--text-primary);
+        }
+
+        .food-custom-wrap .form-input:focus {
+            border-color: var(--pink-400);
+            box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+            background: #fff;
+        }
+
+        /* ========== Step 2: Date/Time Form ========== */
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
+        }
+
+        .form-label {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border: 1.5px solid var(--pink-200);
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text-primary);
+            background: var(--pink-50);
+            transition: all var(--transition);
+            outline: none;
+        }
+
+        .form-input:focus {
+            border-color: var(--pink-400);
+            box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.1);
+            background: #fff;
+        }
+
+        /* ========== Step 3: Activity Picker ========== */
+        .activity-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 0.8rem;
+        }
+
+        .activity-item {
+            background: var(--pink-50);
+            border: 2.5px solid transparent;
+            border-radius: 18px;
+            padding: 1rem 0.6rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .activity-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(255, 64, 129, 0.10);
+        }
+
+        .activity-item.selected {
+            border-color: var(--pink-400);
+            background: var(--pink-100);
+            transform: scale(1.04);
+            box-shadow: 0 4px 16px rgba(255, 64, 129, 0.18);
+        }
+
+        .activity-item .emoji {
+            font-size: 2.2rem;
+            line-height: 1;
+        }
+
+        .activity-item .label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .activity-item.selected .label {
+            color: var(--pink-600);
+            font-weight: 600;
+        }
+
+        /* "我想想" 图标优化 */
+        .activity-item.think-item .emoji {
+            display: inline-block;
+            animation: thinkPulse 2.4s ease-in-out infinite;
+        }
+
+        @keyframes thinkPulse {
+            0%,
+            100% {
+                transform: scale(1) rotate(0deg);
+            }
+            30% {
+                transform: scale(1.15) rotate(-6deg);
+            }
+            70% {
+                transform: scale(1.15) rotate(6deg);
+            }
+        }
+
+        .activity-item.think-item.selected .emoji {
+            animation: thinkPulse 1.2s ease-in-out infinite;
+        }
+
+        .activity-custom-wrap {
+            margin-top: 0.8rem;
+            display: none;
+            animation: fadeSlideIn 0.3s ease both;
+        }
+
+        .activity-custom-wrap.visible {
+            display: block;
+        }
+
+        .activity-custom-wrap .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1.5px solid var(--pink-200);
+            border-radius: 14px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            background: var(--pink-50);
+            transition: all var(--transition);
+            outline: none;
+            color: var(--text-primary);
+        }
+
+        .activity-custom-wrap .form-input:focus {
+            border-color: var(--pink-400);
+            box-shadow: 0 0 0 3px rgba(255, 64, 129, 0.08);
+            background: #fff;
+        }
+
+        /* random result */
+        .random-result {
+            margin-top: 1rem;
+            padding: 1rem 1.2rem;
+            background: linear-gradient(135deg, #fff5f8, #ffe0ec);
+            border-radius: 18px;
+            border: 2px dashed var(--pink-300);
+            display: none;
+            animation: fadeSlideIn 0.5s ease both;
+        }
+
+        .random-result.visible {
+            display: block;
+        }
+
+        .random-result .plan-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--pink-600);
+        }
+
+        .random-result .plan-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
+        }
+
+        .random-result .plan-emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 0.2rem;
+        }
+
+        .btn-random {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+            color: #fff;
+            box-shadow: 0 4px 16px rgba(245, 87, 108, 0.35);
+            margin-top: 0.5rem;
+            padding: 0.7rem 2rem;
+            font-size: 0.95rem;
+        }
+
+        .btn-random:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 8px 28px rgba(245, 87, 108, 0.45);
+        }
+
+        .btn-random:active {
+            transform: translateY(0) scale(0.97);
+        }
+
+        /* ========== Step 5: Confirmation ========== */
+        .confirm-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin: 1.5rem 0;
+        }
+
+        /* 统一卡片尺寸，长宽一致 */
+        .detail-card {
+            background: var(--pink-50);
+            border-radius: 16px;
+            padding: 0.8rem 0.4rem;
+            text-align: center;
+            transition: all var(--transition);
+            border: 1px solid transparent;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        .detail-card:hover {
+            border-color: var(--pink-200);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 64, 129, 0.08);
+        }
+
+        .detail-card .detail-icon {
+            font-size: 1.8rem;
+            margin-bottom: 0.2rem;
+            line-height: 1.2;
+        }
+
+        .detail-card .detail-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-bottom: 0.2rem;
+            font-weight: 500;
+            letter-spacing: 0.04em;
+        }
+
+        .detail-card .detail-value {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.3;
+            padding: 0 0.2rem;
+            word-break: break-word;
+        }
+
+        .detail-card .detail-value .time-display {
+            font-size: 1.05rem;
+            letter-spacing: 0.02em;
+            background: linear-gradient(135deg, var(--pink-400), var(--pink-600));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Hearts bar */
+        .hearts-bar {
+            display: flex;
+            justify-content: center;
+            gap: 0.4rem;
+            margin-top: 1rem;
+        }
+
+        .hearts-bar span {
+            font-size: 1.1rem;
+            animation: heartBeat 1s ease-in-out infinite;
+        }
+
+        .hearts-bar span:nth-child(2) {
+            animation-delay: 0.15s;
+        }
+        .hearts-bar span:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+        .hearts-bar span:nth-child(4) {
+            animation-delay: 0.45s;
+        }
+        .hearts-bar span:nth-child(5) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes heartBeat {
+            0%,
+            100% {
+                transform: scale(1);
+                opacity: 0.7;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 1;
+            }
+        }
+
+        /* ========== Rejection Page ========== */
+        .rejection-face {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            animation: sadShake 2s ease-in-out infinite;
+        }
+
+        @keyframes sadShake {
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+            20% {
+                transform: rotate(-3deg);
+            }
+            40% {
+                transform: rotate(3deg);
+            }
+            60% {
+                transform: rotate(-2deg);
+            }
+            80% {
+                transform: rotate(2deg);
+            }
+        }
+
+        /* ========== Confetti ========== */
+        .confetti-container {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .confetti {
+            position: absolute;
+            top: -20px;
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            animation: confettiFall var(--fall-dur, 3s) var(--fall-delay, 0s) linear forwards;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                opacity: 1;
+                transform: translateY(0) rotate(0deg);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(110dvh) rotate(720deg);
+            }
+        }
+
+        /* ========== Progress Dots ========== */
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--pink-200);
+            transition: all var(--transition);
+        }
+
+        .dot.active {
+            background: var(--pink-500);
+            width: 24px;
+            border-radius: 4px;
+        }
+
+        /* ========== Step 0: Setup ========== */
+        .link-output {
+            background: var(--pink-50);
+            border: 1.5px dashed var(--pink-300);
+            border-radius: 14px;
+            padding: 0.85rem 1rem;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            word-break: break-all;
+            line-height: 1.5;
+            margin-top: 1rem;
+            text-align: left;
+            display: none;
+        }
+
+        .link-output.visible {
+            display: block;
+        }
+
+        .copy-toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--pink-500);
+            color: #fff;
+            padding: 0.6rem 1.5rem;
+            border-radius: var(--radius-btn);
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s ease;
+            z-index: 20;
+        }
+
+        .copy-toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ========== Step 5: Mail Button ========== */
+        .btn-mail {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            text-decoration: none;
+            margin-top: 1rem;
+        }
+
+        /* ========== Responsive ========== */
+        @media (width < 400px) {
+            .card {
+                padding: 2rem 1.2rem 1.5rem;
+            }
+            .title {
+                font-size: 1.4rem;
+            }
+            .food-grid {
+                gap: 0.5rem;
+            }
+            .food-item .emoji {
+                font-size: 1.6rem;
+            }
+            .activity-grid {
+                gap: 0.5rem;
+            }
+            .activity-item .emoji {
+                font-size: 1.8rem;
+            }
+            .btn {
+                padding: 0.75rem 1.6rem;
+                font-size: 0.9rem;
+            }
+            .confirm-details {
+                gap: 0.5rem;
+            }
+            .detail-card {
+                height: 100px;
+                padding: 0.5rem 0.2rem;
+            }
+            .detail-card .detail-value {
+                font-size: 0.8rem;
+            }
+            .detail-card .detail-value .time-display {
+                font-size: 0.9rem;
+            }
+            .detail-card .detail-icon {
+                font-size: 1.4rem;
+            }
+        }
+
+        @media (width < 360px) {
+            .activity-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.4rem;
+            }
+            .activity-item {
+                padding: 0.7rem 0.3rem;
+            }
+            .activity-item .label {
+                font-size: 0.7rem;
+            }
+            .food-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 0.4rem;
+            }
+            .food-item {
+                padding: 0.6rem 0.2rem;
+            }
+            .food-item .label {
+                font-size: 0.7rem;
+            }
+            .detail-card {
+                height: 90px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-  <!-- Floating Hearts Background -->
-  <div class="floating-hearts" id="floatingHearts"></div>
+    <!-- Floating Hearts Background -->
+    <div class="floating-hearts" id="floatingHearts"></div>
 
-  <!-- Copy Toast -->
-  <div class="copy-toast" id="copyToast">链接已复制 ✅</div>
+    <!-- Copy Toast -->
+    <div class="copy-toast" id="copyToast">链接已复制 ✅</div>
 
-  <!-- Main App -->
-  <div class="app">
+    <!-- Main App -->
+    <div class="app">
 
-    <!-- Step 0: Sender Setup -->
-    <div class="step" id="step0">
-      <div class="card">
-        <div class="flowers">
-          <span>💌</span><span>✨</span><span>💘</span><span>✨</span><span>💌</span>
+        <!-- ===== Step 0: Sender Setup ===== -->
+        <div class="step" id="step0">
+            <div class="card">
+                <div class="flowers">
+                    <span>💌</span><span>✨</span><span>💘</span><span>✨</span><span>💌</span>
+                </div>
+                <h1 class="title">创建你的<br />约会邀请函 💌</h1>
+                <p class="subtitle">填写你的信息，生成专属链接发给 TA～</p>
+                <div class="form-group">
+                    <label class="form-label"><span>😊</span> 你的昵称</label>
+                    <input type="text" class="form-input" id="senderName" placeholder="对方怎么称呼你？" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span>📧</span> 你的邮箱</label>
+                    <input type="email" class="form-input" id="senderEmail" placeholder="接收对方回复的邮箱" />
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="generateLink()">生成邀请链接 ✨</button>
+                </div>
+                <div class="link-output" id="linkOutput">
+                    <span id="linkText"></span>
+                </div>
+                <div class="btn-group" id="copyBtnGroup" style="display:none;">
+                    <button class="btn btn-primary" onclick="copyLink()">复制链接 📋</button>
+                </div>
+            </div>
         </div>
-        <h1 class="title">创建你的<br>约会邀请函 💌</h1>
-        <p class="subtitle">填写你的信息，生成专属链接发给 TA～</p>
-        <div class="form-group">
-          <label class="form-label"><span>😊</span> 你的昵称</label>
-          <input type="text" class="form-input" id="senderName" placeholder="对方怎么称呼你？">
+
+        <!-- ===== Step 1: Invitation ===== -->
+        <div class="step" id="step1">
+            <div class="card">
+                <div class="flowers">
+                    <span>🌸</span><span>✨</span><span>🌸</span><span>✨</span><span>🌸</span>
+                </div>
+                <div class="avatar-wrap">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像" />
+                </div>
+                <h1 class="title">可以和我一起<br />约会吗？🥺</h1>
+                <p class="subtitle" id="inviteSubtitle">不用紧张，只是想和你多待一会儿而已～</p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="goToStep(2)">好呀 💕</button>
+                    <button class="btn btn-secondary btn-no" id="btnNo" onclick="handleReject()">不要 😤</button>
+                </div>
+            </div>
         </div>
-        <div class="form-group">
-          <label class="form-label"><span>📧</span> 你的邮箱</label>
-          <input type="email" class="form-input" id="senderEmail" placeholder="接收对方回复的邮箱">
+
+        <!-- ===== Step 2: 时间 ===== -->
+        <div class="step" id="step2">
+            <div class="card">
+                <div class="flowers">
+                    <span>📅</span><span>✨</span><span>⏰</span><span>✨</span><span>📅</span>
+                </div>
+                <div class="avatar-wrap" style="width:70px;height:70px;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像" />
+                </div>
+                <h1 class="title">所以...你什么<br />时候有空？🥰</h1>
+                <p class="subtitle">选一个你方便的时间，我一定到！</p>
+                <div class="form-group">
+                    <label class="form-label"><span>📅</span> 日期</label>
+                    <input type="date" class="form-input" id="dateInput" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span>⏰</span> 时间</label>
+                    <input type="time" class="form-input" id="timeInput" value="18:00" />
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><span>📍</span> 你想在哪见面？</label>
+                    <input type="text" class="form-input" id="locationInput" placeholder="地铁站、商场、还是你楼下？" />
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="goToStep(3)">下一步 → 🥰</button>
+                </div>
+                <div class="progress-dots">
+                    <span class="dot"></span>
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
         </div>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="generateLink()">生成邀请链接 ✨</button>
+
+        <!-- ===== Step 3: 去哪里 ===== -->
+        <div class="step" id="step3">
+            <div class="card">
+                <div class="flowers">
+                    <span>🗺️</span><span>✨</span><span>🎯</span><span>✨</span><span>🗺️</span>
+                </div>
+                <div class="avatar-wrap" style="width:70px;height:70px;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像" />
+                </div>
+                <h1 class="title">我们去哪儿约会？🥰</h1>
+                <p class="subtitle">选一个你感兴趣的地方，或者让命运来决定！</p>
+
+                <div class="activity-grid" id="activityGrid">
+                    <div class="activity-item" data-value="museum" onclick="selectActivity(this, 'museum')">
+                        <span class="emoji">🏛️</span>
+                        <span class="label">深圳博物馆特展<br />9.10-20教师限免</span>
+                    </div>
+                    <div class="activity-item" data-value="xiaomeisha" onclick="selectActivity(this, 'xiaomeisha')">
+                        <span class="emoji">🏖️</span>
+                        <span class="label">小梅沙<br />9.7-13教师限免</span>
+                    </div>
+                    <div class="activity-item" data-value="climbing" onclick="selectActivity(this, 'climbing')">
+                        <span class="emoji">🧗</span>
+                        <span class="label">攀岩体验</span>
+                    </div>
+                    <div class="activity-item think-item" data-value="custom" onclick="selectActivity(this, 'custom')">
+                        <span class="emoji">💭</span>
+                        <span class="label">我想想</span>
+                    </div>
+                </div>
+
+                <div class="activity-custom-wrap" id="customWrap">
+                    <input type="text" class="form-input" id="customActivityInput" placeholder="写下你的约会想法..." oninput="onCustomInput()" />
+                </div>
+
+                <div class="btn-group" style="margin-top:0.8rem;">
+                    <button class="btn btn-random" id="btnRandom" onclick="rollRandomPlan()">🎲 命运随机抽取</button>
+                </div>
+
+                <div class="random-result" id="randomResult">
+                    <span class="plan-emoji" id="randomEmoji">🎉</span>
+                    <div class="plan-name" id="randomName">随机方案</div>
+                    <div class="plan-desc" id="randomDesc">详细描述</div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="btnActivityNext" onclick="confirmActivity()" style="opacity:0.5;pointer-events:none;">
+                        就这个！💗
+                    </button>
+                </div>
+                <div class="progress-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
         </div>
-        <div class="link-output" id="linkOutput">
-          <span id="linkText"></span>
+
+        <!-- ===== Step 4: 吃什么 ===== -->
+        <div class="step" id="step4">
+            <div class="card">
+                <div class="flowers">
+                    <span>🍽️</span><span>✨</span><span>😋</span><span>✨</span><span>🍽️</span>
+                </div>
+                <h1 class="title">我们吃点什么？🤤</h1>
+                <p class="subtitle">选你想吃的，可以多选哦～剩下的我来安排！</p>
+                <div class="food-grid" id="foodGrid">
+                    <div class="food-item" onclick="selectFood(this, '奶茶')">
+                        <span class="emoji">🧋</span>
+                        <span class="label">奶茶</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '烤肉')">
+                        <span class="emoji">🥩</span>
+                        <span class="label">烤肉</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '火锅')">
+                        <span class="emoji">🍲</span>
+                        <span class="label">火锅</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '烧烤')">
+                        <span class="emoji">🍖</span>
+                        <span class="label">烧烤</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '日料')">
+                        <span class="emoji">🍣</span>
+                        <span class="label">日料</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '西餐')">
+                        <span class="emoji">🥗</span>
+                        <span class="label">西餐</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '早茶')">
+                        <span class="emoji">🥟</span>
+                        <span class="label">早茶</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '粤菜')">
+                        <span class="emoji">🥢</span>
+                        <span class="label">粤菜</span>
+                    </div>
+                    <div class="food-item" onclick="selectFood(this, '我想想')" id="foodThink">
+                        <span class="emoji">🤔</span>
+                        <span class="label">我想想</span>
+                    </div>
+                </div>
+
+                <!-- "我想想" 输入框 -->
+                <div class="food-custom-wrap" id="foodCustomWrap">
+                    <input type="text" class="form-input" id="foodCustomInput" placeholder="写下你想吃的东西..." oninput="onFoodCustomInput()" />
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" id="btnFood" onclick="goToStep(5)" style="opacity:0.5;pointer-events:none;">就这个！✨</button>
+                </div>
+                <div class="progress-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot active"></span>
+                    <span class="dot"></span>
+                </div>
+            </div>
         </div>
-        <div class="btn-group" id="copyBtnGroup" style="display:none;">
-          <button class="btn btn-primary" onclick="copyLink()">复制链接 📋</button>
+
+        <!-- ===== Step 5: Confirmation ===== -->
+        <div class="step" id="step5">
+            <div class="card">
+                <div class="flowers">
+                    <span>🎉</span><span>💕</span><span>🎉</span><span>💕</span><span>🎉</span>
+                </div>
+                <div class="avatar-wrap">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像" />
+                </div>
+                <h1 class="title">真开心你没有拒绝～<br />不见不散！😆</h1>
+                <p class="subtitle">这是我们的约会计划，期待那天的到来 ♡</p>
+
+                <!-- 2行2列卡片，统一高度 -->
+                <div class="confirm-details">
+                    <!-- 卡片1: 时间（显示月日 时间） -->
+                    <div class="detail-card">
+                        <span class="detail-icon">📅</span>
+                        <div class="detail-label">见面时间</div>
+                        <div class="detail-value">
+                            <span class="time-display" id="confirmDateTime">-</span>
+                        </div>
+                    </div>
+                    <!-- 卡片2: 地点 -->
+                    <div class="detail-card">
+                        <span class="detail-icon">📍</span>
+                        <div class="detail-label">见面地点</div>
+                        <div class="detail-value" id="confirmLocation">-</div>
+                    </div>
+                    <!-- 卡片3: 去哪里 -->
+                    <div class="detail-card">
+                        <span class="detail-icon">🗺️</span>
+                        <div class="detail-label">去哪里</div>
+                        <div class="detail-value" id="confirmActivity">-</div>
+                    </div>
+                    <!-- 卡片4: 吃什么 -->
+                    <div class="detail-card">
+                        <span class="detail-icon">🍽️</span>
+                        <div class="detail-label">吃什么</div>
+                        <div class="detail-value" id="confirmFood">-</div>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <a class="btn btn-primary btn-mail" id="mailBtn" href="#">截图或点击 Email @ TA</a>
+                </div>
+                <div class="hearts-bar">
+                    <span>💗</span><span>💗</span><span>💗</span><span>💗</span><span>💗</span>
+                </div>
+                <div class="progress-dots">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot active"></span>
+                </div>
+            </div>
         </div>
-      </div>
+
+        <!-- ===== Rejection Page ===== -->
+        <div class="step" id="stepReject">
+            <div class="card">
+                <div class="rejection-face">🥺</div>
+                <h1 class="title">呜呜呜...<br />你真的不愿意吗？</h1>
+                <p class="subtitle">那我再问一次好不好...拜托啦！</p>
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="goToStep(2)" style="font-size:1.1rem;padding:1rem 2.5rem;">好吧好吧，答应你 💕</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Step 1: Invitation -->
-    <div class="step" id="step1">
-      <div class="card">
-        <div class="flowers">
-          <span>🌸</span><span>✨</span><span>🌸</span><span>✨</span><span>🌸</span>
-        </div>
-        <div class="avatar-wrap">
-          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
-        </div>
-        <h1 class="title">可以和我一起<br>约会吗？🥺</h1>
-        <p class="subtitle" id="inviteSubtitle">不用紧张，只是想和你多待一会儿而已～</p>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="goToStep(2)">好呀 💕</button>
-          <button class="btn btn-secondary btn-no" id="btnNo" onclick="handleReject()">不要 😤</button>
-        </div>
-      </div>
-    </div>
+    <!-- Confetti Container -->
+    <div class="confetti-container" id="confettiContainer"></div>
 
-    <!-- Step 2: Food Selection -->
-    <div class="step" id="step2">
-      <div class="card">
-        <div class="flowers">
-          <span>🍽️</span><span>✨</span><span>😋</span><span>✨</span><span>🍽️</span>
-        </div>
-        <h1 class="title">我们吃点什么？🤤</h1>
-        <p class="subtitle">选你想吃的，可以多选哦～剩下的我来安排！</p>
-        <div class="food-grid" id="foodGrid">
-          <div class="food-item" onclick="selectFood(this, '奶茶')">
-            <span class="emoji">🧋</span>
-            <span class="label">奶茶</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '烤肉')">
-            <span class="emoji">🥩</span>
-            <span class="label">烤肉</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '火锅')">
-            <span class="emoji">🍲</span>
-            <span class="label">火锅</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '烧烤')">
-            <span class="emoji">🍖</span>
-            <span class="label">烧烤</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '日料')">
-            <span class="emoji">🍣</span>
-            <span class="label">日料</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '西餐')">
-            <span class="emoji">🥗</span>
-            <span class="label">西餐</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '甜品')">
-            <span class="emoji">🍰</span>
-            <span class="label">甜品</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '小龙虾')">
-            <span class="emoji">🦞</span>
-            <span class="label">小龙虾</span>
-          </div>
-          <div class="food-item" onclick="selectFood(this, '烤串')">
-            <span class="emoji">🍢</span>
-            <span class="label">烤串</span>
-          </div>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-primary" id="btnFood" onclick="goToStep(3)" style="opacity: 0.5; pointer-events: none;">就这个！✨</button>
-        </div>
-        <div class="progress-dots">
-          <span class="dot"></span>
-          <span class="dot active"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-        </div>
-      </div>
-    </div>
+    <script>
+        // ===== State =====
+        let selectedFood = [];
+        let rejectCount = 0;
+        let senderName = '';
+        let senderEmail = '';
 
-    <!-- Step 3: Date & Time -->
-    <div class="step" id="step3">
-      <div class="card">
-        <div class="flowers">
-          <span>📅</span><span>✨</span><span>⏰</span><span>✨</span><span>📅</span>
-        </div>
-        <div class="avatar-wrap" style="width:70px;height:70px;">
-          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
-        </div>
-        <h1 class="title">所以...你什么<br>时候有空？🥰</h1>
-        <p class="subtitle">选一个你方便的时间，我一定到！</p>
-        <div class="form-group">
-          <label class="form-label"><span>📅</span> 日期</label>
-          <input type="date" class="form-input" id="dateInput">
-        </div>
-        <div class="form-group">
-          <label class="form-label"><span>⏰</span> 时间</label>
-          <input type="time" class="form-input" id="timeInput" value="18:00">
-        </div>
-        <div class="form-group">
-          <label class="form-label"><span>📍</span> 你想在哪见面？</label>
-          <input type="text" class="form-input" id="locationInput" placeholder="地铁站、商场、还是你楼下？">
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="confirmDate()">确定！去约会 💗</button>
-        </div>
-        <div class="progress-dots">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot active"></span>
-          <span class="dot"></span>
-        </div>
-      </div>
-    </div>
+        // Activity state
+        let selectedActivity = '';
+        let customActivityText = '';
+        let randomPlanData = null;
 
-    <!-- Step 4: Confirmation -->
-    <div class="step" id="step4">
-      <div class="card">
-        <div class="flowers">
-          <span>🎉</span><span>💕</span><span>🎉</span><span>💕</span><span>🎉</span>
-        </div>
-        <div class="avatar-wrap">
-          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23ffe0ec'/%3E%3Ctext x='50' y='60' text-anchor='middle' font-size='50'%3E🐶%3C/text%3E%3C/svg%3E" alt="头像">
-        </div>
-        <h1 class="title">真开心你没有拒绝～<br>我会来接你！😆</h1>
-        <p class="subtitle">这是我们的约会计划，期待那天的到来 ♡</p>
-        <div class="confirm-details">
-          <div class="detail-card">
-            <div class="detail-icon">📅</div>
-            <div class="detail-label">日期</div>
-            <div class="detail-value" id="confirmDate">-</div>
-          </div>
-          <div class="detail-card">
-            <div class="detail-icon">⏰</div>
-            <div class="detail-label">时间</div>
-            <div class="detail-value" id="confirmTime">-</div>
-          </div>
-          <div class="detail-card">
-            <div class="detail-icon">🍽️</div>
-            <div class="detail-label">吃什么</div>
-            <div class="detail-value" id="confirmFood">-</div>
-          </div>
-          <div class="detail-card">
-            <div class="detail-icon">📍</div>
-            <div class="detail-label">见面地点</div>
-            <div class="detail-value" id="confirmLocation">-</div>
-          </div>
-        </div>
-        <div class="btn-group">
-          <a class="btn btn-primary btn-mail" id="mailBtn" href="#">告诉 TA 你的回复 📧</a>
-        </div>
-        <div class="hearts-bar">
-          <span>💗</span><span>💗</span><span>💗</span><span>💗</span><span>💗</span>
-        </div>
-        <div class="progress-dots">
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot"></span>
-          <span class="dot active"></span>
-        </div>
-      </div>
-    </div>
+        // Food custom state
+        let foodCustomText = '';
 
-    <!-- Rejection Page (hidden) -->
-    <div class="step" id="stepReject">
-      <div class="card">
-        <div class="rejection-face">🥺</div>
-        <h1 class="title">呜呜呜...<br>你真的不愿意吗？</h1>
-        <p class="subtitle">那我再问一次好不好...拜托啦！</p>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="goToStep(2)" style="font-size:1.1rem;padding:1rem 2.5rem;">好吧好吧，答应你 💕</button>
-        </div>
-      </div>
-    </div>
+        // ====== RANDOM PLANS — 100 个约会活动 ======
+        // 按用户提供的10个类别，每个类别10个，共100个
+        const RANDOM_PLANS = [
+            // ——— 一、户外探索类 ———
+            { name: '城市骑行', description: '优先选择有自然风景的路线', emoji: '🚴' },
+            { name: '近郊徒步', description: '建议选择简单的路线', emoji: '🥾' },
+            { name: '公园野餐', description: '自带健康食物，享受午后阳光', emoji: '🧺' },
+            { name: '沙滩散步', description: '在日落前慢慢散步，拥抱海风', emoji: '🏖️' },
+            { name: '户外露营', description: '在天气好的日子里可以看星星', emoji: '⛺' },
+            { name: '水上乐园', description: '为夏日带来一抹清凉的体验', emoji: '💦' },
+            { name: '果园体验', description: '品味当季水果，体验田园乐趣', emoji: '🍎' },
+            { name: '城市漫步', description: '探索陌生街区，感受人文气息', emoji: '🚶' },
+            { name: '早市/夜市', description: '尝尝没试过的小吃', emoji: '🏮' },
+            { name: '周边自驾游', description: '打卡小众景点，错峰出行', emoji: '🚗' },
 
-  </div>
+            // ——— 二、创意互动类 ———
+            { name: 'DIY饰品', description: '为对方制作戒指或者手链', emoji: '💍' },
+            { name: '烘焙', description: '共同合作烤制甜点，享受甜蜜成果', emoji: '🧁' },
+            { name: '拍写真集', description: '定格美好的瞬间', emoji: '📸' },
+            { name: '花艺手工', description: '压干落叶、干花制作书签', emoji: '🌸' },
+            { name: '电玩游戏', description: '通过游戏协作，增加默契度', emoji: '🎮' },
+            { name: '逛集市', description: '各带50元，进行淘"怪东西"比赛', emoji: '🛍️' },
+            { name: '旧物改造', description: '将旧衣物改造成包袋或杯垫', emoji: '♻️' },
+            { name: '去公园抱树', description: '闭眼环抱大树，分享触感联想', emoji: '🌳' },
+            { name: '跳广场舞', description: '加入队伍，享受欢乐氛围', emoji: '💃' },
+            { name: '做瑜伽', description: '共同享受身心放松的舒缓时刻', emoji: '🧘' },
 
-  <!-- Confetti Container -->
-  <div class="confetti-container" id="confettiContainer"></div>
+            // ——— 三、居家日常类 ———
+            { name: '双人厨艺赛', description: '"竞争+合作"模式增加情感联结', emoji: '👨‍🍳' },
+            { name: '断舍离合作', description: '通过物品取舍，唤起共同的情感记忆', emoji: '📦' },
+            { name: '晨间拉伸', description: '通过规律活动建立记忆锚点，身心舒畅', emoji: '🤸' },
+            { name: '蒙眼挑战', description: '猜对方喂的食物，增加信任感', emoji: '🙈' },
+            { name: '护肤体验', description: '互相为对方敷面膜护肤，享受悠闲时光', emoji: '🧖' },
+            { name: '房间布局', description: '一同设计理想中的房间布局', emoji: '🛋️' },
+            { name: '换发型计划', description: '陪对方尝试新的发型', emoji: '💇' },
+            { name: '穿搭挑战', description: '选择某个主题，置办一套主题穿搭', emoji: '👗' },
+            { name: '家务接力赛', description: '设定效率比赛，共同承担家务', emoji: '🧹' },
+            { name: '重温老电影', description: '选择一部经典老电影，重拾感动记忆', emoji: '🎬' },
 
-  <script>
-    // ===== State =====
-    let selectedFood = [];
-    let rejectCount = 0;
-    let senderName = '';
-    let senderEmail = '';
+            // ——— 四、主题约会类 ———
+            { name: '技能交换课', description: '教对方自己擅长的事', emoji: '📚' },
+            { name: '英语约会日', description: '3小时内只能英语交流', emoji: '🇬🇧' },
+            { name: '小成本约会日', description: '限定约会预算，为对方准备礼物', emoji: '💰' },
+            { name: '反爱好挑战', description: '一起体验自己不擅长但感兴趣的事', emoji: '🎯' },
+            { name: '沉默约会', description: '全程禁止说话，放大肢体语言和观察力', emoji: '🤫' },
+            { name: '角色扮演日', description: '抽签扮演特定人设，用角色身份对话', emoji: '🎭' },
+            { name: '镜像约会日', description: '模仿对方的生活习惯，换位思考', emoji: '🪞' },
+            { name: '形状收集', description: '出门时拍下见到的圆形物品，如路牌', emoji: '🔵' },
+            { name: '色彩限定', description: '选择某个主题色，穿该主题色衣服出门', emoji: '🎨' },
+            { name: '寻宝主题', description: '把多个礼物藏在家里多个角落', emoji: '🗺️' },
 
-    // ===== Init =====
-    (function init() {
-      createFloatingHearts();
-      setDefaultDate();
-      checkMode();
-    })();
+            // ——— 五、文艺熏陶类 ———
+            { name: '阅读分享', description: '探店选书，分享读后感和新发现', emoji: '📖' },
+            { name: '话剧/音乐剧', description: '感受现场演出带来的震撼', emoji: '🎭' },
+            { name: '逛博物馆/美术馆', description: '感受历史与艺术熏陶', emoji: '🏛️' },
+            { name: '写生/素描课程', description: '户外艺术实践', emoji: '🎨' },
+            { name: '老城区City Walk', description: '寻访古建筑听历史故事', emoji: '🏘️' },
+            { name: '胶片摄影扫街', description: '在胶片冲洗成相片前，强化期待感', emoji: '📷' },
+            { name: '诗歌声音剧场', description: '录制情诗音频，声音记忆留存更久', emoji: '🎙️' },
+            { name: '手作工坊', description: '体验传统工艺，合作完成一件作品', emoji: '✂️' },
+            { name: '油画/工笔画', description: '色彩碰撞照见思维差异', emoji: '🖼️' },
+            { name: '香氛调香体验', description: '用气味锚定记忆', emoji: '🌹' },
 
-    // ===== Mode Detection =====
-    function checkMode() {
-      const params = new URLSearchParams(window.location.search);
-      const name = params.get('from');
-      const email = params.get('email');
+            // ——— 六、互动游戏类 ———
+            { name: '桌游挑战', description: '简单规则的合作游戏', emoji: '🎲' },
+            { name: '棋类竞技', description: '五子棋/围棋/中国象棋/国际象棋', emoji: '♟️' },
+            { name: '飞行棋', description: '设定小惩罚，如跑腿拿快递等', emoji: '✈️' },
+            { name: '你画我猜', description: '培养表达能力和默契的游戏', emoji: '✏️' },
+            { name: '放风筝', description: '双人配合，共享喜悦', emoji: '🪁' },
+            { name: '故事接龙', description: '共同编写一个无厘头的故事', emoji: '📝' },
+            { name: '房间猜物', description: '描述某样物品的3个特征，让对方猜', emoji: '🔍' },
+            { name: '盲喝饮料测试', description: '猜相似口味的饮料分别是什么', emoji: '🥤' },
+            { name: '童年游戏', description: '拍画片/跳房子/翻花绳', emoji: '🧸' },
+            { name: '植物共养', description: '抽签领养未知绿植，共担照料责任', emoji: '🌱' },
 
-      if (name && email) {
-        // Invited mode: show invitation page
-        senderName = decodeURIComponent(name);
-        senderEmail = decodeURIComponent(email);
-        document.getElementById('inviteSubtitle').textContent =
-          `来自 ${senderName} 的邀请～不用紧张，只是想和你多待一会儿而已～`;
-        document.getElementById('step1').classList.add('active');
-      } else {
-        // Sender mode: show setup page
-        document.getElementById('step0').classList.add('active');
-      }
-    }
+            // ——— 七、美食体验类 ———
+            { name: '烹饪课程', description: '系统性地学习一类菜式', emoji: '🍳' },
+            { name: '学习烘焙', description: '共同制作甜品', emoji: '🍰' },
+            { name: '吐司油画', description: '用果酱当颜料在吐司上作画', emoji: '🍞' },
+            { name: '菜市场挑战', description: '限定金额挑战四菜一汤', emoji: '🥬' },
+            { name: '火锅/烧烤派对', description: '家庭自制省钱版', emoji: '🍖' },
+            { name: '早餐马拉松', description: '连吃3家特色早点摊', emoji: '🥞' },
+            { name: '调酒体验', description: '自制创意鸡尾酒（未成年人不得饮酒）', emoji: '🍸' },
+            { name: '咖啡拉花课', description: '学心形拉花送给对方', emoji: '☕' },
+            { name: '美食街挑战', description: '按"酸甜苦辣"顺序吃遍一条街', emoji: '🍜' },
+            { name: '包饺子', description: '体验一起动手的乐趣，成就感满满', emoji: '🥟' },
 
-    // ===== Generate Link =====
-    function generateLink() {
-      const name = document.getElementById('senderName').value.trim();
-      const email = document.getElementById('senderEmail').value.trim();
+            // ——— 八、娱乐活动类 ———
+            { name: '音乐节/演唱会', description: '享受音乐带来的感动', emoji: '🎵' },
+            { name: 'VR体感游戏', description: '虚拟世界并肩冒险', emoji: '🕶️' },
+            { name: '看脱口秀', description: '在笑声中释放生活的压力', emoji: '🎤' },
+            { name: '游乐园', description: '手拉手一起体验童真快乐', emoji: '🎢' },
+            { name: '保龄球/射箭', description: '轻度竞技运动，培养默契', emoji: '🎳' },
+            { name: '攀岩体验', description: '通过协作增加对彼此的信任', emoji: '🧗' },
+            { name: '动物园', description: '唤醒好奇心，恢复认知资源', emoji: '🦁' },
+            { name: 'KTV', description: '情歌对唱，用歌声表达心意', emoji: '🎤' },
+            { name: '电影院', description: '观看热门高分电影，互相分享观后感', emoji: '🎬' },
+            { name: '羽毛球赛', description: '用积分赛制，输家要为赢家跑腿一次', emoji: '🏸' },
 
-      if (!name) { document.getElementById('senderName').focus(); return; }
-      if (!email || !email.includes('@')) { document.getElementById('senderEmail').focus(); return; }
+            // ——— 九、成长体验类 ———
+            { name: '摄影采风', description: '学习摄影技巧，互拍美照', emoji: '📷' },
+            { name: '晨跑计划', description: '互相督促，坚持28天后分享变化', emoji: '🏃' },
+            { name: '旅行攻略', description: '提前选择目的地，规划一段行程', emoji: '🗺️' },
+            { name: '共修课程', description: '如驾驶、急救等，学习实用技能', emoji: '📖' },
+            { name: '创作诗集', description: '就算文笔不够好，那也是珍贵的回忆', emoji: '✍️' },
+            { name: '语言学习', description: '一起入门一种新的语言', emoji: '🗣️' },
+            { name: '主题对话', description: '选择某个知识主题分享见闻', emoji: '💬' },
+            { name: '情绪记录', description: '记录对方一天情绪变化，深入了解彼此', emoji: '📝' },
+            { name: '职业分享', description: '向对方介绍自己的行业见闻', emoji: '💼' },
+            { name: '五年计划畅想', description: '写未来信，并约定开启日', emoji: '🔮' },
 
-      senderName = name;
-      senderEmail = email;
+            // ——— 十、情感仪式类 ———
+            { name: '母校导览日', description: '体验对方曾经的上学路', emoji: '🏫' },
+            { name: '童年游戏', description: '拍画片/跳房子/翻花绳', emoji: '🎠' },
+            { name: '场景重现', description: '复刻初次约会时的穿搭', emoji: '👫' },
+            { name: '手写信告白', description: '把想对对方说的话写下来', emoji: '💌' },
+            { name: '变老化妆', description: '想象未来相伴到老的日子', emoji: '👵' },
+            { name: '语音信箱', description: '为一年后的对方录一段音频', emoji: '📧' },
+            { name: '主题月日历', description: '提前设计每个月的主题活动', emoji: '📅' },
+            { name: '交换童年礼物', description: '送对方小时候最想要的东西', emoji: '🎁' },
+            { name: '分享相册', description: '和另一半讲老照片背后的故事', emoji: '📖' },
+            { name: '鼓励纸条', description: '写下鼓励的话随机放在家里的角落', emoji: '📋' }
+        ];
 
-      const base = window.location.origin + window.location.pathname;
-      const link = `${base}?from=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
+        // ===== Init =====
+        (function init() {
+            createFloatingHearts();
+            setDefaultDate();
+            checkMode();
+        })();
 
-      document.getElementById('linkText').textContent = link;
-      document.getElementById('linkOutput').classList.add('visible');
-      document.getElementById('copyBtnGroup').style.display = 'flex';
-    }
+        // ===== Mode Detection =====
+        function checkMode() {
+            const params = new URLSearchParams(window.location.search);
+            const name = params.get('from');
+            const email = params.get('email');
 
-    // ===== Copy Link =====
-    function copyLink() {
-      const text = document.getElementById('linkText').textContent;
-      navigator.clipboard.writeText(text).then(() => {
-        const toast = document.getElementById('copyToast');
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2000);
-      });
-    }
+            if (name && email) {
+                senderName = decodeURIComponent(name);
+                senderEmail = decodeURIComponent(email);
+                document.getElementById('inviteSubtitle').textContent =
+                    `来自 ${senderName} 的邀请～不用紧张，只是想和你多待一会儿而已～`;
+                document.getElementById('step1').classList.add('active');
+            } else {
+                document.getElementById('step0').classList.add('active');
+            }
+        }
 
-    function setDefaultDate() {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
-      const y = tomorrow.getFullYear();
-      const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
-      const d = String(tomorrow.getDate()).padStart(2, '0');
-      document.getElementById('dateInput').value = `${y}-${m}-${d}`;
-    }
+        // ===== Generate Link =====
+        function generateLink() {
+            const name = document.getElementById('senderName').value.trim();
+            const email = document.getElementById('senderEmail').value.trim();
 
-    // ===== Navigation =====
-    function goToStep(n) {
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-      const target = document.getElementById(`step${n}`);
-      if (target) {
-        // Re-trigger animation
-        target.style.animation = 'none';
-        target.offsetHeight; // reflow
-        target.style.animation = '';
-        target.classList.add('active');
-      }
-      if (n === 4) {
-        setTimeout(launchConfetti, 300);
-      }
-    }
+            if (!name) { document.getElementById('senderName').focus(); return; }
+            if (!email || !email.includes('@')) { document.getElementById('senderEmail').focus(); return; }
 
-    // ===== Reject Handler =====
-    function handleReject() {
-      rejectCount++;
-      const btn = document.getElementById('btnNo');
+            senderName = name;
+            senderEmail = email;
 
-      if (rejectCount < 3) {
-        // Make the button "escape"
-        btn.classList.add('escaping');
-        setTimeout(() => btn.classList.remove('escaping'), 300);
+            const base = window.location.origin + window.location.pathname;
+            const link = `${base}?from=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
 
-        // Change text progressively
-        const texts = ['再想想？😢', '真的吗？🥺'];
-        btn.textContent = texts[rejectCount - 1] || '🥺';
-      } else {
-        // After 3 rejections, go to rejection page
-        document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-        const reject = document.getElementById('stepReject');
-        reject.style.animation = 'none';
-        reject.offsetHeight;
-        reject.style.animation = '';
-        reject.classList.add('active');
-      }
-    }
+            document.getElementById('linkText').textContent = link;
+            document.getElementById('linkOutput').classList.add('visible');
+            document.getElementById('copyBtnGroup').style.display = 'flex';
+        }
 
-    // ===== Food Selection (Multi-select) =====
-    function selectFood(el, name) {
-      if (el.classList.contains('selected')) {
-        el.classList.remove('selected');
-        selectedFood = selectedFood.filter(f => f !== name);
-      } else {
-        el.classList.add('selected');
-        selectedFood.push(name);
-      }
+        function copyLink() {
+            const text = document.getElementById('linkText').textContent;
+            navigator.clipboard.writeText(text).then(() => {
+                const toast = document.getElementById('copyToast');
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 2000);
+            });
+        }
 
-      const btn = document.getElementById('btnFood');
-      if (selectedFood.length > 0) {
-        btn.style.opacity = '1';
-        btn.style.pointerEvents = 'auto';
-      } else {
-        btn.style.opacity = '0.5';
-        btn.style.pointerEvents = 'none';
-      }
-    }
+        function setDefaultDate() {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const y = tomorrow.getFullYear();
+            const m = String(tomorrow.getMonth() + 1).padStart(2, '0');
+            const d = String(tomorrow.getDate()).padStart(2, '0');
+            document.getElementById('dateInput').value = `${y}-${m}-${d}`;
+        }
 
-    // ===== Date Confirmation =====
-    function confirmDate() {
-      const dateVal = document.getElementById('dateInput').value;
-      const timeVal = document.getElementById('timeInput').value;
-      const locVal = document.getElementById('locationInput').value || '你指定的地方';
+        // ===== Navigation =====
+        function goToStep(n) {
+            document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+            const target = document.getElementById(`step${n}`);
+            if (target) {
+                target.style.animation = 'none';
+                target.offsetHeight;
+                target.style.animation = '';
+                target.classList.add('active');
+            }
+            if (n === 5) {
+                setTimeout(launchConfetti, 400);
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
 
-      // Format date
-      let dateDisplay = dateVal;
-      if (dateVal) {
-        const d = new Date(dateVal + 'T00:00:00');
-        const weekdays = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
-        dateDisplay = `${d.getMonth() + 1}月${d.getDate()}日 ${weekdays[d.getDay()]}`;
-      }
+        // ===== Reject Handler =====
+        function handleReject() {
+            rejectCount++;
+            const btn = document.getElementById('btnNo');
 
-      document.getElementById('confirmDate').textContent = dateDisplay;
-      document.getElementById('confirmTime').textContent = timeVal || '18:00';
-      document.getElementById('confirmFood').textContent = selectedFood.length > 0 ? selectedFood.join('、') : '你选的';
-      document.getElementById('confirmLocation').textContent = locVal;
+            if (rejectCount < 3) {
+                btn.classList.add('escaping');
+                setTimeout(() => btn.classList.remove('escaping'), 300);
+                const texts = ['再想想？😢', '真的吗？🥺'];
+                btn.textContent = texts[rejectCount - 1] || '🥺';
+            } else {
+                document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+                const reject = document.getElementById('stepReject');
+                reject.style.animation = 'none';
+                reject.offsetHeight;
+                reject.style.animation = '';
+                reject.classList.add('active');
+            }
+        }
 
-      // Build mailto link
-      if (senderEmail) {
-        const subject = encodeURIComponent(`💕 约会确认 - 来自你的约会邀请`);
-        const body = encodeURIComponent(
-          `Hi ${senderName}!\n\n` +
-          `你的约会邀请被接受啦！🎉\n\n` +
-          `以下是约会计划：\n` +
-          `📅 日期：${dateDisplay}\n` +
-          `⏰ 时间：${timeVal || '18:00'}\n` +
-          `🍽️ 吃什么：${selectedFood.length > 0 ? selectedFood.join('、') : '你选的'}\n` +
-          `📍 见面地点：${locVal}\n\n` +
-          `期待我们的约会！💕`
-        );
-        document.getElementById('mailBtn').href = `mailto:${senderEmail}?subject=${subject}&body=${body}`;
-      } else {
-        document.getElementById('mailBtn').style.display = 'none';
-      }
+        // ===== Food Selection =====
+        function selectFood(el, name) {
+            const isThink = (name === '我想想');
+            const customWrap = document.getElementById('foodCustomWrap');
+            const customInput = document.getElementById('foodCustomInput');
 
-      goToStep(4);
-    }
+            if (isThink) {
+                if (el.classList.contains('selected')) {
+                    el.classList.remove('selected');
+                    selectedFood = selectedFood.filter(f => f !== '我想想');
+                    customWrap.classList.remove('visible');
+                    customInput.value = '';
+                    foodCustomText = '';
+                    updateFoodBtn();
+                    return;
+                } else {
+                    document.querySelectorAll('.food-item').forEach(item => item.classList.remove('selected'));
+                    el.classList.add('selected');
+                    selectedFood = ['我想想'];
+                    customWrap.classList.add('visible');
+                    customInput.focus();
+                    if (foodCustomText) {
+                        customInput.value = foodCustomText;
+                        selectedFood = [foodCustomText];
+                    } else {
+                        selectedFood = ['我想想'];
+                    }
+                    updateFoodBtn();
+                    return;
+                }
+            }
 
-    // ===== Floating Hearts =====
-    function createFloatingHearts() {
-      const container = document.getElementById('floatingHearts');
-      const hearts = ['💕', '💗', '💖', '♥️', '🩷', '✨', '🌸'];
+            // 普通食物
+            if (selectedFood.includes('我想想')) {
+                document.getElementById('foodThink').classList.remove('selected');
+                selectedFood = selectedFood.filter(f => f !== '我想想');
+                document.getElementById('foodCustomWrap').classList.remove('visible');
+                document.getElementById('foodCustomInput').value = '';
+                foodCustomText = '';
+            }
 
-      for (let i = 0; i < 18; i++) {
-        const heart = document.createElement('span');
-        heart.classList.add('heart');
-        heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
-        heart.style.left = Math.random() * 100 + '%';
-        heart.style.setProperty('--dur', (6 + Math.random() * 8) + 's');
-        heart.style.setProperty('--delay', (Math.random() * 10) + 's');
-        heart.style.fontSize = (0.8 + Math.random() * 1) + 'rem';
-        container.appendChild(heart);
-      }
-    }
+            if (el.classList.contains('selected')) {
+                el.classList.remove('selected');
+                selectedFood = selectedFood.filter(f => f !== name);
+            } else {
+                el.classList.add('selected');
+                selectedFood.push(name);
+            }
 
-    // ===== Confetti =====
-    function launchConfetti() {
-      const container = document.getElementById('confettiContainer');
-      const colors = ['#ff4081', '#ff94b8', '#ffc2d9', '#ff6b9d', '#e91e6c', '#ffeb3b', '#4fc3f7'];
+            updateFoodBtn();
+        }
 
-      for (let i = 0; i < 60; i++) {
-        const confetti = document.createElement('div');
-        confetti.classList.add('confetti');
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.width = (6 + Math.random() * 8) + 'px';
-        confetti.style.height = (6 + Math.random() * 8) + 'px';
-        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-        confetti.style.setProperty('--fall-dur', (2 + Math.random() * 3) + 's');
-        confetti.style.setProperty('--fall-delay', (Math.random() * 1) + 's');
-        container.appendChild(confetti);
-      }
+        function onFoodCustomInput() {
+            const val = document.getElementById('foodCustomInput').value.trim();
+            foodCustomText = val;
 
-      // Clean up after animation
-      setTimeout(() => { container.innerHTML = ''; }, 6000);
-    }
-  </script>
+            const thinkEl = document.getElementById('foodThink');
+            if (thinkEl.classList.contains('selected')) {
+                if (val) {
+                    selectedFood = [val];
+                } else {
+                    selectedFood = ['我想想'];
+                }
+                updateFoodBtn();
+            } else {
+                if (val) {
+                    document.querySelectorAll('.food-item').forEach(item => item.classList.remove('selected'));
+                    thinkEl.classList.add('selected');
+                    selectedFood = [val];
+                    document.getElementById('foodCustomWrap').classList.add('visible');
+                    updateFoodBtn();
+                }
+            }
+        }
+
+        function updateFoodBtn() {
+            const btn = document.getElementById('btnFood');
+            let hasValid = false;
+
+            if (selectedFood.length > 0) {
+                if (selectedFood.includes('我想想')) {
+                    if (selectedFood.length === 1 && !foodCustomText) {
+                        hasValid = false;
+                    } else {
+                        hasValid = true;
+                    }
+                } else {
+                    hasValid = true;
+                }
+            }
+
+            if (hasValid) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            } else {
+                btn.style.opacity = '0.5';
+                btn.style.pointerEvents = 'none';
+            }
+        }
+
+        // ===== Activity Picker =====
+        function selectActivity(el, value) {
+            document.getElementById('randomResult').classList.remove('visible');
+            randomPlanData = null;
+
+            document.querySelectorAll('.activity-item').forEach(item => item.classList.remove('selected'));
+
+            el.classList.add('selected');
+            selectedActivity = value;
+
+            const customWrap = document.getElementById('customWrap');
+            if (value === 'custom') {
+                customWrap.classList.add('visible');
+                const val = document.getElementById('customActivityInput').value.trim();
+                if (val) {
+                    customActivityText = val;
+                    enableActivityNext(true);
+                } else {
+                    enableActivityNext(false);
+                }
+            } else {
+                customWrap.classList.remove('visible');
+                customActivityText = '';
+                enableActivityNext(true);
+            }
+            updateActivityNext();
+        }
+
+        function onCustomInput() {
+            const val = document.getElementById('customActivityInput').value.trim();
+            customActivityText = val;
+            if (selectedActivity === 'custom') {
+                if (val) {
+                    enableActivityNext(true);
+                } else {
+                    enableActivityNext(false);
+                }
+            }
+        }
+
+        function enableActivityNext(enabled) {
+            const btn = document.getElementById('btnActivityNext');
+            if (enabled) {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            } else {
+                btn.style.opacity = '0.5';
+                btn.style.pointerEvents = 'none';
+            }
+        }
+
+        function updateActivityNext() {
+            if (randomPlanData) {
+                enableActivityNext(true);
+                return;
+            }
+            if (selectedActivity === 'custom') {
+                const val = document.getElementById('customActivityInput').value.trim();
+                if (val) {
+                    enableActivityNext(true);
+                } else {
+                    enableActivityNext(false);
+                }
+                return;
+            }
+            if (selectedActivity) {
+                enableActivityNext(true);
+            } else {
+                enableActivityNext(false);
+            }
+        }
+
+        // ===== Random Plan =====
+        function rollRandomPlan() {
+            document.querySelectorAll('.activity-item').forEach(item => item.classList.remove('selected'));
+            document.getElementById('customWrap').classList.remove('visible');
+            selectedActivity = 'random';
+
+            const plan = RANDOM_PLANS[Math.floor(Math.random() * RANDOM_PLANS.length)];
+            randomPlanData = plan;
+
+            const resultEl = document.getElementById('randomResult');
+            document.getElementById('randomEmoji').textContent = plan.emoji;
+            document.getElementById('randomName').textContent = plan.name;
+            document.getElementById('randomDesc').textContent = plan.description;
+            resultEl.classList.add('visible');
+
+            enableActivityNext(true);
+
+            const btn = document.getElementById('btnRandom');
+            btn.textContent = '🎲 再抽一次！';
+            btn.style.background = 'linear-gradient(135deg, #a18cd1, #fbc2eb)';
+            setTimeout(() => {
+                btn.style.background = '';
+            }, 300);
+        }
+
+        // ===== Confirm Activity =====
+        function confirmActivity() {
+            let displayText = '';
+            if (randomPlanData) {
+                displayText = randomPlanData.name + ' — ' + randomPlanData.description;
+            } else if (selectedActivity === 'custom') {
+                displayText = document.getElementById('customActivityInput').value.trim() || '自定义约会';
+            } else {
+                const map = {
+                    'museum': '🏛️ 深圳博物馆',
+                    'xiaomeisha': '🏖️ 小梅沙',
+                    'climbing': '🧗 攀岩体验'
+                };
+                displayText = map[selectedActivity] || selectedActivity;
+            }
+
+            window._pendingActivity = displayText;
+            goToStep(4);
+        }
+
+        // ===== Step 4 -> Step 5: Final confirmation =====
+        const originalGoToStep = goToStep;
+        goToStep = function(n) {
+            if (n === 5) {
+                const dateVal = document.getElementById('dateInput').value;
+                const timeVal = document.getElementById('timeInput').value || '18:00';
+                const locVal = document.getElementById('locationInput').value || '你指定的地方';
+
+                // 格式化时间为 "9月8日 13:00" （去掉年份）
+                let dateDisplay = '';
+                if (dateVal) {
+                    const d = new Date(dateVal + 'T00:00:00');
+                    dateDisplay = `${d.getMonth() + 1}月${d.getDate()}日`;
+                } else {
+                    dateDisplay = '日期未选';
+                }
+                const dateTimeDisplay = `${dateDisplay} ${timeVal}`;
+
+                // Activity text
+                const activityText = window._pendingActivity || '未选择';
+
+                // Food text - 优先使用 foodCustomText
+                let foodText = '未选择';
+                if (foodCustomText) {
+                    foodText = foodCustomText;
+                } else if (selectedFood.length > 0) {
+                    if (selectedFood.includes('我想想')) {
+                        foodText = '🤔 还没想好～';
+                    } else {
+                        foodText = selectedFood.join('、');
+                    }
+                }
+
+                // 设置确认卡片
+                document.getElementById('confirmDateTime').textContent = dateTimeDisplay;
+                document.getElementById('confirmLocation').textContent = locVal;
+                document.getElementById('confirmActivity').textContent = activityText;
+                document.getElementById('confirmFood').textContent = foodText;
+
+                // Build mailto
+                if (senderEmail) {
+                    const subject = encodeURIComponent(`💕 约会确认 - 来自你的约会邀请`);
+                    const body = encodeURIComponent(
+                        `Hi ${senderName}!\n\n` +
+                        `你的约会邀请被接受啦！🎉\n\n` +
+                        `以下是约会计划：\n` +
+                        `📅 见面时间：${dateTimeDisplay}\n` +
+                        `📍 见面地点：${locVal}\n` +
+                        `🗺️ 去哪里：${activityText}\n` +
+                        `🍽️ 吃什么：${foodText}\n\n` +
+                        `期待我们的约会！💕`
+                    );
+                    document.getElementById('mailBtn').href = `mailto:${senderEmail}?subject=${subject}&body=${body}`;
+                } else {
+                    document.getElementById('mailBtn').style.display = 'none';
+                }
+            }
+
+            originalGoToStep(n);
+        };
+
+        // ===== Floating Hearts =====
+        function createFloatingHearts() {
+            const container = document.getElementById('floatingHearts');
+            const hearts = ['💕', '💗', '💖', '♥️', '🩷', '✨', '🌸'];
+
+            for (let i = 0; i < 18; i++) {
+                const heart = document.createElement('span');
+                heart.classList.add('heart');
+                heart.textContent = hearts[Math.floor(Math.random() * hearts.length)];
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.setProperty('--dur', (6 + Math.random() * 8) + 's');
+                heart.style.setProperty('--delay', (Math.random() * 10) + 's');
+                heart.style.fontSize = (0.8 + Math.random() * 1) + 'rem';
+                container.appendChild(heart);
+            }
+        }
+
+        // ===== Confetti =====
+        function launchConfetti() {
+            const container = document.getElementById('confettiContainer');
+            const colors = ['#ff4081', '#ff94b8', '#ffc2d9', '#ff6b9d', '#e91e6c', '#ffeb3b', '#4fc3f7'];
+
+            for (let i = 0; i < 60; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = (6 + Math.random() * 8) + 'px';
+                confetti.style.height = (6 + Math.random() * 8) + 'px';
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                confetti.style.setProperty('--fall-dur', (2 + Math.random() * 3) + 's');
+                confetti.style.setProperty('--fall-delay', (Math.random() * 1) + 's');
+                container.appendChild(confetti);
+            }
+
+            setTimeout(() => { container.innerHTML = ''; }, 6000);
+        }
+    </script>
 </body>
 </html>
