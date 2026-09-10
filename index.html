@@ -1044,7 +1044,7 @@
                 </div>
 
                 <div class="activity-custom-wrap" id="customWrap">
-                    <input type="text" class="form-input" id="customActivityInput" placeholder="写下你的约会想法..." oninput="onCustomInput()" />
+                    <input type="text" class="form-input" id="customActivityInput" placeholder="写下你的约会想法（留空 = 都可以）..." oninput="onCustomInput()" />
                 </div>
 
                 <div class="btn-group" style="margin-top:0.8rem;">
@@ -1121,7 +1121,7 @@
 
                 <!-- "我想想" 输入框 -->
                 <div class="food-custom-wrap" id="foodCustomWrap">
-                    <input type="text" class="form-input" id="foodCustomInput" placeholder="写下你想吃的东西..." oninput="onFoodCustomInput()" />
+                    <input type="text" class="form-input" id="foodCustomInput" placeholder="写下你想吃的东西（留空 = 都可以）..." oninput="onFoodCustomInput()" />
                 </div>
 
                 <div class="btn-group">
@@ -1492,13 +1492,13 @@
                 } else {
                     document.querySelectorAll('.food-item').forEach(item => item.classList.remove('selected'));
                     el.classList.add('selected');
-                    selectedFood = ['我想想'];
                     customWrap.classList.add('visible');
                     customInput.focus();
                     if (foodCustomText) {
                         customInput.value = foodCustomText;
                         selectedFood = [foodCustomText];
                     } else {
+                        // ★ 留空也允许，最终会显示为“都可以”
                         selectedFood = ['我想想'];
                     }
                     updateFoodBtn();
@@ -1532,11 +1532,8 @@
 
             const thinkEl = document.getElementById('foodThink');
             if (thinkEl.classList.contains('selected')) {
-                if (val) {
-                    selectedFood = [val];
-                } else {
-                    selectedFood = ['我想想'];
-                }
+                // ★ 留空时保持“我想想”，最终展示为“都可以”
+                selectedFood = val ? [val] : ['我想想'];
                 updateFoodBtn();
             } else {
                 if (val) {
@@ -1549,21 +1546,10 @@
             }
         }
 
+        // ★ 只要选了东西（包含留空的“我想想”）就可继续
         function updateFoodBtn() {
             const btn = document.getElementById('btnFood');
-            let hasValid = false;
-
-            if (selectedFood.length > 0) {
-                if (selectedFood.includes('我想想')) {
-                    if (selectedFood.length === 1 && !foodCustomText) {
-                        hasValid = false;
-                    } else {
-                        hasValid = true;
-                    }
-                } else {
-                    hasValid = true;
-                }
-            }
+            const hasValid = selectedFood.length > 0;
 
             if (hasValid) {
                 btn.style.opacity = '1';
@@ -1587,30 +1573,20 @@
             const customWrap = document.getElementById('customWrap');
             if (value === 'custom') {
                 customWrap.classList.add('visible');
-                const val = document.getElementById('customActivityInput').value.trim();
-                if (val) {
-                    customActivityText = val;
-                    enableActivityNext(true);
-                } else {
-                    enableActivityNext(false);
-                }
+                // ★ 留空也允许，最终会显示为“都可以”
+                customActivityText = document.getElementById('customActivityInput').value.trim();
             } else {
                 customWrap.classList.remove('visible');
                 customActivityText = '';
-                enableActivityNext(true);
             }
-            updateActivityNext();
+
+            enableActivityNext(true);
         }
 
         function onCustomInput() {
-            const val = document.getElementById('customActivityInput').value.trim();
-            customActivityText = val;
+            customActivityText = document.getElementById('customActivityInput').value.trim();
             if (selectedActivity === 'custom') {
-                if (val) {
-                    enableActivityNext(true);
-                } else {
-                    enableActivityNext(false);
-                }
+                enableActivityNext(true);
             }
         }
 
@@ -1626,24 +1602,7 @@
         }
 
         function updateActivityNext() {
-            if (randomPlanData) {
-                enableActivityNext(true);
-                return;
-            }
-            if (selectedActivity === 'custom') {
-                const val = document.getElementById('customActivityInput').value.trim();
-                if (val) {
-                    enableActivityNext(true);
-                } else {
-                    enableActivityNext(false);
-                }
-                return;
-            }
-            if (selectedActivity) {
-                enableActivityNext(true);
-            } else {
-                enableActivityNext(false);
-            }
+            enableActivityNext(!!(randomPlanData || selectedActivity));
         }
 
         // ===== Random Plan =====
@@ -1677,7 +1636,8 @@
             if (randomPlanData) {
                 displayText = randomPlanData.name + ' — ' + randomPlanData.description;
             } else if (selectedActivity === 'custom') {
-                displayText = document.getElementById('customActivityInput').value.trim() || '自定义约会';
+                // ★ 没有填写就默认“都可以”
+                displayText = document.getElementById('customActivityInput').value.trim() || '都可以';
             } else {
                 const map = {
                     'museum': '🏛️ 深圳博物馆',
@@ -1708,12 +1668,13 @@
 
             const activityText = window._pendingActivity || '未选择';
 
+            // ★ 食物：填了就用填的，只选了“我想想”没填 → 都可以
             let foodText = '未选择';
             if (foodCustomText) {
                 foodText = foodCustomText;
             } else if (selectedFood.length > 0) {
                 foodText = selectedFood.includes('我想想')
-                    ? '🤔 还没想好～'
+                    ? '都可以'
                     : selectedFood.join('、');
             }
 
