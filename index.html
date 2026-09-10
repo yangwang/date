@@ -778,7 +778,7 @@
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s ease;
-            z-index: 20;
+            z-index: 40;
         }
 
         .copy-toast.show {
@@ -792,7 +792,62 @@
             align-items: center;
             gap: 0.4rem;
             text-decoration: none;
+        }
+
+        /* ========== ★ 新增：图片预览弹层 ========== */
+        .image-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(45, 27, 48, 0.55);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 30;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .image-modal.show {
+            display: flex;
+        }
+
+        .image-modal-inner {
+            background: #fff;
+            border-radius: 24px;
+            padding: 1.1rem;
+            width: min(380px, 92vw);
+            max-height: 92dvh;
+            overflow-y: auto;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.28);
+            animation: fadeSlideIn 0.35s ease both;
+        }
+
+        .image-modal-inner img {
+            width: 100%;
+            display: block;
+            border-radius: 16px;
+            border: 1px solid var(--pink-100);
+            box-shadow: 0 6px 20px rgba(255, 64, 129, 0.12);
+        }
+
+        .image-hint {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0.85rem 0 0.2rem;
+        }
+
+        .image-modal .btn-group {
             margin-top: 1rem;
+            gap: 0.6rem;
+        }
+
+        .image-modal .btn {
+            padding: 0.7rem 1.4rem;
+            font-size: 0.9rem;
         }
 
         /* ========== Responsive ========== */
@@ -1124,9 +1179,15 @@
                     </div>
                 </div>
 
-                <div class="btn-group">
-                    <a class="btn btn-primary btn-mail" id="mailBtn" href="#">截图或点击 Email @ TA</a>
+                <!-- ★ 新增：生成图片按钮 -->
+                <div class="btn-group" style="margin-top:0;">
+                    <button class="btn btn-primary" id="btnShot" onclick="generateCardImage()">📸 图片发给 TA</button>
                 </div>
+
+                <div class="btn-group" style="margin-top:0.9rem;">
+                    <a class="btn btn-secondary btn-mail" id="mailBtn" href="#">📧 Email @ TA</a>
+                </div>
+
                 <div class="hearts-bar">
                     <span>💗</span><span>💗</span><span>💗</span><span>💗</span><span>💗</span>
                 </div>
@@ -1157,6 +1218,18 @@
     <!-- Confetti Container -->
     <div class="confetti-container" id="confettiContainer"></div>
 
+    <!-- ★ 新增：生成图片预览弹层 -->
+    <div class="image-modal" id="imageModal" onclick="if(event.target===this) closeImageModal()">
+        <div class="image-modal-inner">
+            <img id="generatedImage" alt="约会邀请卡片" />
+            <p class="image-hint" id="imageHint">长按图片可保存到相册，或点击下方按钮下载～</p>
+            <div class="btn-group">
+                <button class="btn btn-primary" onclick="downloadCardImage()">下载图片</button>
+                <button class="btn btn-secondary" onclick="closeImageModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ===== State =====
         let selectedFood = [];
@@ -1173,7 +1246,6 @@
         let foodCustomText = '';
 
         // ====== RANDOM PLANS — 100 个约会活动 ======
-        // 按用户提供的10个类别，每个类别10个，共100个
         const RANDOM_PLANS = [
             // ——— 一、户外探索类 ———
             { name: '城市骑行', description: '优先选择有自然风景的路线', emoji: '🚴' },
@@ -1301,6 +1373,15 @@
             createFloatingHearts();
             setDefaultDate();
             checkMode();
+
+            // 根据设备给出保存提示
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            const hint = document.getElementById('imageHint');
+            if (hint) {
+                hint.textContent = isMobile
+                    ? '长按图片即可保存到相册，或点击下方按钮下载～'
+                    : '点击下方按钮保存图片，也可以直接截图分享～';
+            }
         })();
 
         // ===== Mode Detection =====
@@ -1610,66 +1691,275 @@
             goToStep(4);
         }
 
+        // ===== ★ 收集约会计划数据（供确认页 / 生成图片共用） =====
+        function getPlanData() {
+            const dateVal = document.getElementById('dateInput').value;
+            const timeVal = document.getElementById('timeInput').value || '18:00';
+            const locVal = document.getElementById('locationInput').value.trim() || '你指定的地方';
+
+            let dateDisplay = '日期未选';
+            if (dateVal) {
+                const d = new Date(dateVal + 'T00:00:00');
+                if (!isNaN(d.getTime())) {
+                    dateDisplay = `${d.getMonth() + 1}月${d.getDate()}日`;
+                }
+            }
+            const dateTimeDisplay = `${dateDisplay} ${timeVal}`;
+
+            const activityText = window._pendingActivity || '未选择';
+
+            let foodText = '未选择';
+            if (foodCustomText) {
+                foodText = foodCustomText;
+            } else if (selectedFood.length > 0) {
+                foodText = selectedFood.includes('我想想')
+                    ? '🤔 还没想好～'
+                    : selectedFood.join('、');
+            }
+
+            return { dateTimeDisplay, locVal, activityText, foodText };
+        }
+
         // ===== Step 4 -> Step 5: Final confirmation =====
         const originalGoToStep = goToStep;
         goToStep = function(n) {
             if (n === 5) {
-                const dateVal = document.getElementById('dateInput').value;
-                const timeVal = document.getElementById('timeInput').value || '18:00';
-                const locVal = document.getElementById('locationInput').value || '你指定的地方';
-
-                // 格式化时间为 "9月8日 13:00" （去掉年份）
-                let dateDisplay = '';
-                if (dateVal) {
-                    const d = new Date(dateVal + 'T00:00:00');
-                    dateDisplay = `${d.getMonth() + 1}月${d.getDate()}日`;
-                } else {
-                    dateDisplay = '日期未选';
-                }
-                const dateTimeDisplay = `${dateDisplay} ${timeVal}`;
-
-                // Activity text
-                const activityText = window._pendingActivity || '未选择';
-
-                // Food text - 优先使用 foodCustomText
-                let foodText = '未选择';
-                if (foodCustomText) {
-                    foodText = foodCustomText;
-                } else if (selectedFood.length > 0) {
-                    if (selectedFood.includes('我想想')) {
-                        foodText = '🤔 还没想好～';
-                    } else {
-                        foodText = selectedFood.join('、');
-                    }
-                }
+                const data = getPlanData();
 
                 // 设置确认卡片
-                document.getElementById('confirmDateTime').textContent = dateTimeDisplay;
-                document.getElementById('confirmLocation').textContent = locVal;
-                document.getElementById('confirmActivity').textContent = activityText;
-                document.getElementById('confirmFood').textContent = foodText;
+                document.getElementById('confirmDateTime').textContent = data.dateTimeDisplay;
+                document.getElementById('confirmLocation').textContent = data.locVal;
+                document.getElementById('confirmActivity').textContent = data.activityText;
+                document.getElementById('confirmFood').textContent = data.foodText;
 
                 // Build mailto
+                const mailBtn = document.getElementById('mailBtn');
                 if (senderEmail) {
                     const subject = encodeURIComponent(`💕 约会确认 - 来自你的约会邀请`);
                     const body = encodeURIComponent(
                         `Hi ${senderName}!\n\n` +
                         `你的约会邀请被接受啦！🎉\n\n` +
                         `以下是约会计划：\n` +
-                        `📅 见面时间：${dateTimeDisplay}\n` +
-                        `📍 见面地点：${locVal}\n` +
-                        `🗺️ 去哪里：${activityText}\n` +
-                        `🍽️ 吃什么：${foodText}\n\n` +
+                        `📅 见面时间：${data.dateTimeDisplay}\n` +
+                        `📍 见面地点：${data.locVal}\n` +
+                        `🗺️ 去哪里：${data.activityText}\n` +
+                        `🍽️ 吃什么：${data.foodText}\n\n` +
                         `期待我们的约会！💕`
                     );
-                    document.getElementById('mailBtn').href = `mailto:${senderEmail}?subject=${subject}&body=${body}`;
+                    mailBtn.href = `mailto:${senderEmail}?subject=${subject}&body=${body}`;
+                    mailBtn.style.display = '';
                 } else {
-                    document.getElementById('mailBtn').style.display = 'none';
+                    mailBtn.style.display = 'none';
                 }
             }
 
             originalGoToStep(n);
         };
+
+        // ===== ★ 新增：Canvas 绘制约会卡片图片 =====
+        const CANVAS_FONT = '"PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif';
+        let cardDataURL = '';
+
+        function roundRectPath(ctx, x, y, w, h, r) {
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + w, y, x + w, y + h, r);
+            ctx.arcTo(x + w, y + h, x, y + h, r);
+            ctx.arcTo(x, y + h, x, y, r);
+            ctx.arcTo(x, y, x + w, y, r);
+            ctx.closePath();
+        }
+
+        function fitFontSize(ctx, text, maxWidth, baseSize, weight) {
+            let size = baseSize;
+            while (size > 13) {
+                ctx.font = `${weight} ${size}px ${CANVAS_FONT}`;
+                if (ctx.measureText(text).width <= maxWidth) break;
+                size -= 1;
+            }
+            return size;
+        }
+
+        function generateCardImage() {
+            const W = 750, H = 1150, SCALE = 2;
+            const data = getPlanData();
+            const who = senderName || '神秘人';
+
+            const canvas = document.createElement('canvas');
+            canvas.width = W * SCALE;
+            canvas.height = H * SCALE;
+            const ctx = canvas.getContext('2d');
+            ctx.scale(SCALE, SCALE);
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // —— 背景渐变 ——
+            const bg = ctx.createLinearGradient(0, 0, W, H);
+            bg.addColorStop(0, '#fff7fa');
+            bg.addColorStop(0.5, '#ffe4ef');
+            bg.addColorStop(1, '#ffd6e8');
+            ctx.fillStyle = bg;
+            ctx.fillRect(0, 0, W, H);
+
+            // —— 柔光 ——
+            const glow = ctx.createRadialGradient(W * 0.18, H * 0.1, 20, W * 0.18, H * 0.1, 460);
+            glow.addColorStop(0, 'rgba(255,255,255,0.95)');
+            glow.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = glow;
+            ctx.fillRect(0, 0, W, H);
+
+            // —— 白色卡片 ——
+            ctx.save();
+            ctx.shadowColor = 'rgba(255, 64, 129, 0.22)';
+            ctx.shadowBlur = 40;
+            ctx.shadowOffsetY = 14;
+            roundRectPath(ctx, 45, 45, W - 90, H - 90, 46);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+
+            // —— 卡片内部装饰（裁剪） ——
+            ctx.save();
+            roundRectPath(ctx, 45, 45, W - 90, H - 90, 46);
+            ctx.clip();
+
+            const bar = ctx.createLinearGradient(45, 0, W - 45, 0);
+            bar.addColorStop(0, '#ff94b8');
+            bar.addColorStop(0.5, '#ff4081');
+            bar.addColorStop(1, '#ff94b8');
+            ctx.fillStyle = bar;
+            ctx.fillRect(45, 45, W - 90, 12);
+
+            ctx.globalAlpha = 0.07;
+            ctx.font = `170px ${CANVAS_FONT}`;
+            ctx.fillText('💗', 636, 178);
+            ctx.fillText('💗', 118, 1036);
+            ctx.globalAlpha = 1;
+            ctx.restore();
+
+            // —— 顶部小表情 ——
+            const topEmojis = ['💌', '✨', '💘', '✨', '💌'];
+            ctx.font = `30px ${CANVAS_FONT}`;
+            topEmojis.forEach((e, i) => {
+                const spacing = 62;
+                const startX = W / 2 - (topEmojis.length - 1) * spacing / 2;
+                ctx.fillText(e, startX + i * spacing, 132);
+            });
+
+            // —— 标题 ——
+            ctx.font = `bold 48px ${CANVAS_FONT}`;
+            ctx.fillStyle = '#2d1b30';
+            ctx.fillText('约会邀请函', W / 2, 208);
+
+            // —— 副标题 ——
+            ctx.font = `24px ${CANVAS_FONT}`;
+            ctx.fillStyle = '#a88aab';
+            ctx.fillText(`来自 ${who} 的邀约`, W / 2, 264);
+
+            // —— 头像 ——
+            ctx.beginPath();
+            ctx.arc(W / 2, 358, 56, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffe0ec';
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#ffc2d9';
+            ctx.stroke();
+
+            ctx.font = `52px ${CANVAS_FONT}`;
+            ctx.fillText('🐶', W / 2, 362);
+
+            ctx.font = `30px ${CANVAS_FONT}`;
+            ctx.fillText('💕', W / 2 + 76, 326);
+
+            // —— 分隔线 ——
+            ctx.beginPath();
+            ctx.moveTo(W / 2 - 110, 452);
+            ctx.lineTo(W / 2 + 110, 452);
+            ctx.strokeStyle = '#ffd9e8';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(W / 2 - 24, 452 - 17, 48, 34);
+            ctx.font = `22px ${CANVAS_FONT}`;
+            ctx.fillText('💗', W / 2, 452);
+
+            // —— 四行信息 ——
+            const rows = [
+                { icon: '📅', label: '见面时间', value: data.dateTimeDisplay },
+                { icon: '📍', label: '见面地点', value: data.locVal },
+                { icon: '🗺️', label: '去哪里', value: data.activityText },
+                { icon: '🍽️', label: '吃什么', value: data.foodText }
+            ];
+
+            rows.forEach((row, i) => {
+                const x = 100, w = 550, h = 112;
+                const y = 494 + i * 122;
+
+                roundRectPath(ctx, x, y, w, h, 28);
+                ctx.fillStyle = '#fff5f8';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255, 194, 217, 0.75)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // 图标圆底
+                ctx.beginPath();
+                ctx.arc(x + 60, y + h / 2, 33, 0, Math.PI * 2);
+                ctx.fillStyle = '#ffe0ec';
+                ctx.fill();
+                ctx.font = `30px ${CANVAS_FONT}`;
+                ctx.fillText(row.icon, x + 60, y + h / 2 + 2);
+
+                // 标签
+                ctx.textAlign = 'left';
+                ctx.font = `21px ${CANVAS_FONT}`;
+                ctx.fillStyle = '#a88aab';
+                ctx.fillText(row.label, x + 112, y + 36);
+
+                // 内容（自动缩放字号）
+                const size = fitFontSize(ctx, row.value, w - 112 - 36, 31, 'bold');
+                ctx.font = `bold ${size}px ${CANVAS_FONT}`;
+                ctx.fillStyle = '#2d1b30';
+                ctx.fillText(row.value, x + 112, y + 74);
+
+                ctx.textAlign = 'center';
+            });
+
+            // —— 底部祝福 ——
+            ctx.font = `bold 30px ${CANVAS_FONT}`;
+            ctx.fillStyle = '#ff4081';
+            ctx.fillText('💕 不见不散 💕', W / 2, 1035);
+
+            // —— 输出 ——
+            try {
+                cardDataURL = canvas.toDataURL('image/png');
+            } catch (err) {
+                alert('图片生成失败了，请直接截图保存吧 🙏');
+                return;
+            }
+
+            const modal = document.getElementById('imageModal');
+            document.getElementById('generatedImage').src = cardDataURL;
+            modal.classList.remove('show');
+            // 触发重排以便动画重新播放
+            void modal.offsetWidth;
+            modal.classList.add('show');
+        }
+
+        function downloadCardImage() {
+            if (!cardDataURL) return;
+            const a = document.createElement('a');
+            a.href = cardDataURL;
+            a.download = `约会邀请_${(senderName || 'TA').trim() || 'TA'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('show');
+        }
 
         // ===== Floating Hearts =====
         function createFloatingHearts() {
